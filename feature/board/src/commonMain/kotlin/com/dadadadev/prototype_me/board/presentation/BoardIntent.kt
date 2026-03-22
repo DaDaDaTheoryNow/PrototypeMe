@@ -3,36 +3,42 @@ package com.dadadadev.prototype_me.board.presentation
 import androidx.compose.ui.geometry.Offset
 import com.dadadadev.prototype_me.domain.models.FieldType
 import com.dadadadev.prototype_me.domain.models.Position
-import com.dadadadev.prototype_me.domain.models.RelationType
 
 sealed class BoardIntent {
     // ── Canvas gestures ───────────────────────────────────────────────────────
     data class OnPanZoom(val centroid: Offset, val pan: Offset, val zoom: Float) : BoardIntent()
+    /** Pan-only (no zoom). Used for scroll-wheel pan and RMB drag. */
+    data class OnPan(val delta: Offset) : BoardIntent()
 
-    // ── Node drag ─────────────────────────────────────────────────────────────
+    // ── Node drag (move) ──────────────────────────────────────────────────────
     data class OnDragStart(val nodeId: String) : BoardIntent()
     data class OnDragNode(val nodeId: String, val delta: Offset) : BoardIntent()
     data class OnDragEnd(val nodeId: String) : BoardIntent()
 
-    // ── Add node ──────────────────────────────────────────────────────────────
+    // ── Add / delete node ─────────────────────────────────────────────────────
     data class OnAddNode(val name: String, val position: Position) : BoardIntent()
+    data class OnDeleteNode(val nodeId: String) : BoardIntent()
 
-    // ── Connect: tap a port dot to start/finish a connection ──────────────────
-    /** Tap the header port dot → entity-level connection */
+    // ── Tap-to-connect (tap port dot to start / finish) ───────────────────────
     data class OnNodeTap(val nodeId: String) : BoardIntent()
-
-    /** Tap a field port dot → field-level connection */
     data class OnNodeFieldTap(val nodeId: String, val fieldId: String) : BoardIntent()
-
-    /** Cancel the current pending connection (e.g. tapped canvas background) */
     data object OnCancelConnect : BoardIntent()
+
+    // ── Drag-to-connect (drag from port dot to target) ────────────────────────
+    data class OnEdgeDragStart(val nodeId: String, val fieldId: String?) : BoardIntent()
+    data class OnEdgeDragMove(val screenPos: Offset) : BoardIntent()
+    /** targetNodeId = null → cancelled or dropped on empty canvas */
+    data class OnEdgeDragEnd(val targetNodeId: String?, val targetFieldId: String?) : BoardIntent()
 
     // ── Edge interaction ──────────────────────────────────────────────────────
     data class OnSelectEdge(val edgeId: String?) : BoardIntent()
     data class OnDeleteEdge(val edgeId: String) : BoardIntent()
-    data class OnChangeEdgeType(val edgeId: String, val type: RelationType) : BoardIntent()
 
-    // ── Field editing ─────────────────────────────────────────────────────────
+    // ── Node selection menu ───────────────────────────────────────────────────
+    /** nodeId = null → close menu */
+    data class OnNodeMenu(val nodeId: String?) : BoardIntent()
+
+    // ── Field editing (long-press → dialog) ───────────────────────────────────
     data class OnSelectNode(val nodeId: String?) : BoardIntent()
     data class OnAddField(val nodeId: String, val name: String, val type: FieldType) : BoardIntent()
     data class OnRemoveField(val nodeId: String, val fieldId: String) : BoardIntent()

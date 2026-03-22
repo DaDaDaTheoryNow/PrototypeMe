@@ -14,6 +14,11 @@ sealed class BoardAction {
         override val actionId: String
     ) : BoardAction()
 
+    data class DeleteNode(
+        val nodeId: String,
+        override val actionId: String
+    ) : BoardAction()
+
     data class AddEdge(
         val edge: RelationEdge,
         override val actionId: String
@@ -41,12 +46,6 @@ sealed class BoardAction {
 
     data class DeleteEdge(
         val edgeId: String,
-        override val actionId: String
-    ) : BoardAction()
-
-    data class ChangeEdgeType(
-        val edgeId: String,
-        val newType: RelationType,
         override val actionId: String
     ) : BoardAction()
 }

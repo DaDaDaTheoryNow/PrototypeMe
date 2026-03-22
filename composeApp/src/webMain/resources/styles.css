@@ -4,6 +4,11 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    /* Prevent mobile browser zoom — canvas handles its own pinch/zoom */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none;
 }
 
 body.loading {

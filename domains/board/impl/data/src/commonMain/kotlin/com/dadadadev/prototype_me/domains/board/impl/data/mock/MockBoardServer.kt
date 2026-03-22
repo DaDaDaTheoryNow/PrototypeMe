@@ -30,6 +30,13 @@ class MockBoardServer {
             is BoardAction.AddNode -> {
                 ctx.copy(nodes = ctx.nodes + (action.node.id to action.node))
             }
+            is BoardAction.DeleteNode -> {
+                // Remove node + all edges that reference it
+                val remainingEdges = ctx.edges.filter { (_, e) ->
+                    e.sourceNodeId != action.nodeId && e.targetNodeId != action.nodeId
+                }
+                ctx.copy(nodes = ctx.nodes - action.nodeId, edges = remainingEdges)
+            }
             is BoardAction.AddEdge -> {
                 ctx.copy(edges = ctx.edges + (action.edge.id to action.edge))
             }
@@ -50,10 +57,6 @@ class MockBoardServer {
             }
             is BoardAction.DeleteEdge -> {
                 ctx.copy(edges = ctx.edges - action.edgeId)
-            }
-            is BoardAction.ChangeEdgeType -> {
-                val edge = ctx.edges[action.edgeId] ?: return
-                ctx.copy(edges = ctx.edges + (action.edgeId to edge.copy(type = action.newType)))
             }
         }
     }

@@ -6,12 +6,11 @@ import com.dadadadev.prototype_me.domain.models.FieldType
 import com.dadadadev.prototype_me.domain.models.NodeField
 import com.dadadadev.prototype_me.domain.models.Position
 import com.dadadadev.prototype_me.domain.models.RelationEdge
-import com.dadadadev.prototype_me.domain.models.RelationType
 
 /**
  * Realistic e-commerce ERD used as initial board state:
  *
- *   User ──1:N──> Order ──1:N──> OrderItem <──1:N── Product
+ *   User ──> Order ──> OrderItem <── Product
  *
  * All edges connect at the field level (FK references).
  */
@@ -46,6 +45,7 @@ object InitialMockData {
             "order_item" to EntityNode(
                 id = "order_item", name = "OrderItem", position = Position(490f, 320f),
                 fields = listOf(
+                    NodeField("oi_id",        "id",        FieldType.NUMBER),
                     NodeField("oi_orderId",   "orderId",   FieldType.NUMBER),
                     NodeField("oi_productId", "productId", FieldType.NUMBER),
                     NodeField("oi_qty",       "qty",       FieldType.NUMBER),
@@ -54,26 +54,23 @@ object InitialMockData {
         )
 
         val edges = mapOf(
-            // User.id ──1:N──> Order.userId
+            // User.id ──> Order.userId
             "e_user_order" to RelationEdge(
                 id = "e_user_order",
                 sourceNodeId = "user",  sourceFieldId = "u_id",
                 targetNodeId = "order", targetFieldId = "o_userId",
-                type = RelationType.ONE_TO_MANY
             ),
-            // Order.id ──1:N──> OrderItem.orderId
+            // Order.id ──> OrderItem.orderId
             "e_order_item" to RelationEdge(
                 id = "e_order_item",
                 sourceNodeId = "order",      sourceFieldId = "o_id",
                 targetNodeId = "order_item", targetFieldId = "oi_orderId",
-                type = RelationType.ONE_TO_MANY
             ),
-            // Product.id ──1:N──> OrderItem.productId
+            // Product.id ──> OrderItem.productId
             "e_product_item" to RelationEdge(
                 id = "e_product_item",
                 sourceNodeId = "product",    sourceFieldId = "p_id",
                 targetNodeId = "order_item", targetFieldId = "oi_productId",
-                type = RelationType.ONE_TO_MANY
             ),
         )
 

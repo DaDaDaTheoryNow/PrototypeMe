@@ -2,18 +2,16 @@ package com.dadadadev.prototype_me.board.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,45 +36,32 @@ import com.dadadadev.prototype_me.domain.models.EntityNode
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
-// ── Layout constants (must match actual dp values used in the card layout) ──
+// в”Ђв”Ђ Layout constants вЂ” must match actual dp values in the layout below в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const val CARD_WIDTH_DP = 160f
-const val CARD_HEADER_DP = 40f     // padding(8) + Text(13sp ~20dp) + padding(8) ≈ 36-40
-const val CARD_FIELD_ROW_DP = 24f  // padding(4) + Text(11sp ~16dp) + padding(4) ≈ 24
+const val CARD_HEADER_DP = 44f    // Row height(44.dp)
+const val CARD_FIELD_ROW_DP = 28f // Row height(28.dp)
 const val CARD_DIVIDER_DP = 1f
 
-/**
- * A single entity card on the infinite canvas.
- *
- * Port dots (small circles on the right edge of each row) are always visible
- * and tappable — tapping one starts or completes a connection without any
- * separate "connect mode" toggle.
- *
- * Interactions:
- * - Drag card body    → move node
- * - Long press body   → open field editor
- * - Tap port dot      → start / finish a connection
- */
 @Composable
 fun EntityCard(
     nodeId: String,
     stateFlow: StateFlow<BoardState>,
-    isSourceNode: Boolean,                          // card is the source of a pending connection
-    isConnecting: Boolean,                          // any connection is currently in progress
+    isSourceNode: Boolean,
+    isConnecting: Boolean,
     onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
+    onTap: () -> Unit,
     onLongPress: () -> Unit,
-    onHeaderPortTap: () -> Unit,
-    onFieldPortTap: (fieldId: String) -> Unit,
     highlightedFieldIds: Set<String> = emptySet(),
 ) {
-    val node by produceState<EntityNode?>(initialValue = null, stateFlow) {
+    val node by produceState<EntityNode?>(null, nodeId, stateFlow) {
         stateFlow.map { it.nodes[nodeId] }.collect { value = it }
     }
-    val scale by produceState(initialValue = 1f, stateFlow) {
+    val scale by produceState(1f, stateFlow) {
         stateFlow.map { it.scale }.collect { value = it }
     }
-    val panOffset by produceState(initialValue = Offset.Zero, stateFlow) {
+    val panOffset by produceState(Offset.Zero, stateFlow) {
         stateFlow.map { it.panOffset }.collect { value = it }
     }
 
@@ -89,11 +74,7 @@ fun EntityCard(
         else         -> Color(0xFFDDDDDD)
     }
     val borderWidth = if (isSourceNode) 2.dp else 1.dp
-    val bgColor = when {
-        isSourceNode -> Color(0xFFF5F5F5)
-        isLocked     -> Color(0xFFF0F0F0)
-        else         -> Color.White
-    }
+    val bgColor = if (isSourceNode) Color(0xFFF8F8F8) else Color.White
 
     Box(
         modifier = Modifier.graphicsLayer {
@@ -101,22 +82,65 @@ fun EntityCard(
             translationY = currentNode.position.y * scale + panOffset.y
             scaleX = scale
             scaleY = scale
-            // TOP-LEFT pivot so card edge = translationX exactly
             transformOrigin = TransformOrigin(0f, 0f)
         }
     ) {
         Card(
             modifier = Modifier
                 .width(CARD_WIDTH_DP.dp)
-                .pointerInput(nodeId) {
-                    detectDragGestures(
-                        onDragStart = { onDragStart() },
-                        onDragEnd = { onDragEnd() },
-                        onDrag = { change, delta -> change.consume(); onDrag(delta) }
-                    )
-                }
-                .pointerInput(nodeId) {
-                    detectTapGestures(onLongPress = { onLongPress() })
+                // в”Ђв”Ђ Single combined gesture handler: tap / long-press / drag в”Ђв”Ђ
+                // Consumes DOWN immediately so parent canvas handler won't pan.
+                .pointerInput(nodeId, scale) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = true)
+                        down.consume() // в†ђ prevents canvas pan
+
+                        val downPos = down.position
+                        var isDragging = false
+                        var released = false
+
+                        // Race: long-press timeout vs pointer movement/release
+                        val completed = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.find { it.id == down.id } ?: break
+                                if (!change.pressed) {
+                                    released = true
+                                    change.consume()
+                                    break
+                                }
+                                val dist = (change.position - downPos).getDistance()
+                                if (!isDragging && dist > viewConfiguration.touchSlop) {
+                                    isDragging = true
+                                    onDragStart()
+                                }
+                                if (isDragging) {
+                                    change.consume()
+                                    onDrag(Offset((change.position.x - change.previousPosition.x) * scale, (change.position.y - change.previousPosition.y) * scale))
+                                }
+                            }
+                        }
+
+                        if (isDragging) {
+                            // Was dragging вЂ” if not yet released, keep tracking
+                            if (!released) {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.find { it.id == down.id } ?: break
+                                    if (!change.pressed) { change.consume(); break }
+                                    change.consume()
+                                    onDrag(Offset((change.position.x - change.previousPosition.x) * scale, (change.position.y - change.previousPosition.y) * scale))
+                                }
+                            }
+                            onDragEnd()
+                        } else if (completed == null) {
+                            // Timeout with no drag в†’ long press
+                            onLongPress()
+                        } else if (released) {
+                            // Released before timeout and before slop в†’ tap
+                            onTap()
+                        }
+                    }
                 },
             shape = RoundedCornerShape(6.dp),
             border = BorderStroke(borderWidth, borderColor),
@@ -124,11 +148,12 @@ fun EntityCard(
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSourceNode) 6.dp else 2.dp)
         ) {
             Column {
-                // ── Header row ────────────────────────────────────────────────
+                // в”Ђв”Ђ Header в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .height(CARD_HEADER_DP.dp)
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -137,100 +162,51 @@ fun EntityCard(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (isLocked) Color(0xFF888888) else Color(0xFF111111),
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         if (isLocked) {
-                            Spacer(Modifier.height(2.dp))
                             Text(
-                                text = "● ${currentNode.lockedBy}",
-                                fontSize = 10.sp,
+                                text = "* ${currentNode.lockedBy}",
+                                fontSize = 9.sp,
                                 color = Color(0xFFBBBBBB),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
-                    // Header port dot — always visible, tappable
-                    Spacer(Modifier.width(4.dp))
-                    PortDot(
-                        isSource = isSourceNode,
-                        isConnecting = isConnecting,
-                        size = 8,
-                        onTap = onHeaderPortTap
-                    )
                 }
 
-                // ── Fields ────────────────────────────────────────────────────
+                // в”Ђв”Ђ Fields в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
                 if (currentNode.fields.isNotEmpty()) {
-                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-                    Column(modifier = Modifier.padding(bottom = 6.dp)) {
-                        currentNode.fields.forEach { field ->
-                            val isHighlighted = field.id in highlightedFieldIds
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(if (isHighlighted) Color(0xFFF5F5F5) else Color.Transparent)
-                                    .padding(start = 12.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = field.name,
-                                    fontSize = 11.sp,
-                                    color = if (isHighlighted) Color(0xFF111111) else Color(0xFF444444),
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = field.type.name.lowercase(),
-                                    fontSize = 10.sp,
-                                    color = Color(0xFFBBBBBB),
-                                    maxLines = 1
-                                )
-                                // Field port dot — always visible, tappable
-                                Spacer(Modifier.width(6.dp))
-                                PortDot(
-                                    isSource = isSourceNode,
-                                    isConnecting = isConnecting,
-                                    size = 7,
-                                    onTap = { onFieldPortTap(field.id) }
-                                )
-                            }
+                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = CARD_DIVIDER_DP.dp)
+                    currentNode.fields.forEach { field ->
+                        val isHighlighted = field.id in highlightedFieldIds
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(CARD_FIELD_ROW_DP.dp)
+                                .background(if (isHighlighted) Color(0xFFF2F2F2) else Color.Transparent)
+                                .padding(start = 12.dp, end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = field.name,
+                                fontSize = 11.sp,
+                                color = if (isHighlighted) Color(0xFF111111) else Color(0xFF444444),
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = field.type.name.lowercase(),
+                                fontSize = 10.sp,
+                                color = Color(0xFFBBBBBB),
+                            )
                         }
                     }
                 }
             }
         }
     }
-}
-
-/**
- * Small tappable circle that acts as a connection port.
- *
- * Colours:
- *  - source node     → dark (active)
- *  - connecting, not source → medium grey (valid target hint)
- *  - idle            → light grey (subtle)
- */
-@Composable
-private fun PortDot(
-    isSource: Boolean,
-    isConnecting: Boolean,
-    size: Int,
-    onTap: () -> Unit,
-) {
-    val color = when {
-        isSource    -> Color(0xFF111111)
-        isConnecting -> Color(0xFF888888)
-        else        -> Color(0xFFCCCCCC)
-    }
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .background(color, CircleShape)
-            .pointerInput(isSource, isConnecting) {
-                detectTapGestures(onTap = { onTap() })
-            }
-    )
 }

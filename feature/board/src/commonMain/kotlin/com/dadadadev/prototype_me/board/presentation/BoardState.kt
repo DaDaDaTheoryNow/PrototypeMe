@@ -11,11 +11,22 @@ data class BoardState(
     val scale: Float = 1f,
     val currentUserId: String = "user_1",
 
-    // ── Connection in progress (null = idle) ──────────────────────────────────
+    // ── Tap-to-connect (port dot tap) ─────────────────────────────────────────
     val connectingFromNodeId: String? = null,
-    val connectingFromFieldId: String? = null,   // null = entity-level
+    val connectingFromFieldId: String? = null,
+
+    // ── Drag-to-connect (port dot drag) ──────────────────────────────────────
+    val draggingEdgeFromNodeId: String? = null,
+    val draggingEdgeFromFieldId: String? = null,
+    val draggingEdgeCurrentPos: Offset? = null,
 
     // ── Selection ─────────────────────────────────────────────────────────────
-    val selectedNodeId: String? = null,          // field editor open
-    val selectedEdgeId: String? = null,          // edge toolbar open
+    val selectedEdgeId: String? = null,
+    val nodeMenuNodeId: String? = null,   // floating action menu (tap to select)
+    val selectedNodeId: String? = null,   // field editor dialog (long press)
+
+    // ── Locally authoritative nodes ─────────────────────────────────────────
+    // Nodes in this set were recently dragged by us. mergeNodes always keeps
+    // local position for them until the server catches up.
+    val locallyMovedNodeIds: Set<String> = emptySet(),
 )
