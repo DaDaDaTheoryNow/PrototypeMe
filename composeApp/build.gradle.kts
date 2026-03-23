@@ -53,9 +53,9 @@ kotlin {
             implementation(libs.koin.core)
             
             // Feature modules
-            implementation(projects.feature.board)
-            implementation(projects.domains.board.api.data)
-            implementation(projects.domains.board.impl.data)
+            implementation(project(":feature:erd-board"))
+            implementation(project(":domains:erd-design:api:data"))
+            implementation(project(":domains:erd-design:impl:data"))
             implementation(projects.core.mvi)
             implementation(projects.core.ui)
         }
@@ -113,4 +113,6 @@ compose.desktop {
         }
     }
 }
+
+
 

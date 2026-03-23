@@ -36,12 +36,30 @@ plugins {
 include(":app")
 project(":app").projectDir = file("composeApp")
 
-// Library modules
+// Core modules
 include(":core:mvi")
 include(":core:ui")
-include(":domains:board:api:data")
-include(":domains:board:api:domain")
-include(":domains:board:impl:data")
-include(":domains:board:impl:domain")
-include(":feature:board")
+
+// Board Core modules
+include(":domains:board-core:api:domain")
+include(":domains:board-core:api:data")
+include(":domains:board-core:impl:domain")
+include(":domains:board-core:impl:data")
+
+// ERD Design modules
+include(":domains:erd-design:api:domain")
+include(":domains:erd-design:api:data")
+include(":domains:erd-design:impl:domain")
+include(":domains:erd-design:impl:data")
+
+// Board System Design modules
+include(":domains:board-sysdesign:api:domain")
+include(":domains:board-sysdesign:api:data")
+include(":domains:board-sysdesign:impl:domain")
+include(":domains:board-sysdesign:impl:data")
+
+// Feature modules
+include(":feature:erd-board")
+include(":feature:board-core")
+
 

@@ -21,9 +21,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.orbit.core)
+            api(libs.orbit.core)
             implementation(libs.orbit.compose)
-            implementation(libs.androidx.lifecycle.viewmodel)
+            api(libs.androidx.lifecycle.viewmodel)
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
