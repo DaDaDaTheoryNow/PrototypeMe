@@ -3,6 +3,7 @@
 .gradle
 .claude
 .gradle-user-home
+.gradle-user
 kotlin-js-store
 .android
 **/build/

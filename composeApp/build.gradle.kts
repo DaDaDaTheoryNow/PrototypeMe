@@ -54,7 +54,7 @@ kotlin {
             
             // Feature modules
             implementation(projects.feature.board)
-            implementation(projects.domain)
+            implementation(projects.domains.board.api.data)
             implementation(projects.domains.board.impl.data)
             implementation(projects.core.mvi)
             implementation(projects.core.ui)

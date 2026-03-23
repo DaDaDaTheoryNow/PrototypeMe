@@ -39,11 +39,9 @@ project(":app").projectDir = file("composeApp")
 // Library modules
 include(":core:mvi")
 include(":core:ui")
-include(":domain")
 include(":domains:board:api:data")
 include(":domains:board:api:domain")
 include(":domains:board:impl:data")
 include(":domains:board:impl:domain")
 include(":feature:board")
 
-project(":domain").projectDir = file("domains/board/compat/domain")

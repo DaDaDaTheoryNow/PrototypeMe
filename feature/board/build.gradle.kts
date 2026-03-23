@@ -21,10 +21,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.domain)
-
+            implementation(projects.domains.board.api.data)
             implementation(projects.core.mvi)
             implementation(projects.core.ui)
+
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

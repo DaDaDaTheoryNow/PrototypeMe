@@ -29,8 +29,8 @@ class BoardViewModel(
                         val local = state.nodes[id]
                         val rem = remote.nodes[id]
                         local != null && rem != null &&
-                            local.position.x == rem.position.x &&
-                            local.position.y == rem.position.y
+                                local.position.x == rem.position.x &&
+                                local.position.y == rem.position.y
                     }.toSet()
                     state.copy(
                         nodes = merged,
@@ -45,7 +45,13 @@ class BoardViewModel(
             repository.observeSideEffects().collect { effect ->
                 when (effect) {
                     is BoardSyncEffect.LockRejected ->
-                        postSideEffect(BoardSideEffect.ShowLockError(effect.nodeId, effect.lockedBy))
+                        postSideEffect(
+                            BoardSideEffect.ShowLockError(
+                                effect.nodeId,
+                                effect.lockedBy
+                            )
+                        )
+
                     is BoardSyncEffect.ConnectionLost ->
                         postSideEffect(BoardSideEffect.ShowConnectionLost)
                 }
@@ -61,7 +67,7 @@ class BoardViewModel(
     fun onIntent(boardIntent: BoardIntent) = intent {
         when (boardIntent) {
 
-            // ── Canvas ────────────────────────────────────────────────────────
+            // Canvas
             is BoardIntent.OnPanZoom -> reduce {
                 val newScale = (state.scale * boardIntent.zoom).coerceIn(MIN_SCALE, MAX_SCALE)
                 val f = newScale / state.scale
@@ -78,7 +84,7 @@ class BoardViewModel(
                 state.copy(panOffset = state.panOffset + boardIntent.delta)
             }
 
-            // ── Node drag ─────────────────────────────────────────────────────
+            // Node drag
             is BoardIntent.OnDragStart -> {
                 reduce { state.copy(locallyMovedNodeIds = state.locallyMovedNodeIds + boardIntent.nodeId) }
                 repository.requestLock(boardIntent.nodeId)
@@ -96,7 +102,7 @@ class BoardViewModel(
 
             is BoardIntent.OnDragEnd -> repository.releaseLock(boardIntent.nodeId)
 
-            // ── Add / delete node ─────────────────────────────────────────────
+            // Add / delete node
             is BoardIntent.OnAddNode -> {
                 val nodeId = uuid()
                 val node = EntityNode(
@@ -125,32 +131,23 @@ class BoardViewModel(
                 repository.sendAction(BoardAction.DeleteNode(nodeId, uuid()))
             }
 
-            // ── Tap-to-connect ────────────────────────────────────────────────
-            is BoardIntent.OnNodeTap -> {
-                val nodeId = boardIntent.nodeId
-                val sourceId = state.connectingFromNodeId
-                when {
-                    sourceId == null -> reduce {
-                        state.copy(connectingFromNodeId = nodeId, connectingFromFieldId = null, nodeMenuNodeId = null)
-                    }
-                    sourceId == nodeId -> reduce {
-                        state.copy(connectingFromNodeId = null, connectingFromFieldId = null)
-                    }
-                    else -> createEdge(sourceId, state.connectingFromFieldId, nodeId, null)
-                }
-            }
-
+            // Tap-to-connect
             is BoardIntent.OnNodeFieldTap -> {
                 val nodeId = boardIntent.nodeId
                 val fieldId = boardIntent.fieldId
-                val sourceId = state.connectingFromNodeId
-                when {
-                    sourceId == null -> reduce {
-                        state.copy(connectingFromNodeId = nodeId, connectingFromFieldId = fieldId, nodeMenuNodeId = null)
+                when (val sourceId = state.connectingFromNodeId) {
+                    null -> reduce {
+                        state.copy(
+                            connectingFromNodeId = nodeId,
+                            connectingFromFieldId = fieldId,
+                            nodeMenuNodeId = null
+                        )
                     }
-                    sourceId == nodeId -> reduce {
+
+                    nodeId -> reduce {
                         state.copy(connectingFromNodeId = null, connectingFromFieldId = null)
                     }
+
                     else -> createEdge(sourceId, state.connectingFromFieldId, nodeId, fieldId)
                 }
             }
@@ -159,12 +156,15 @@ class BoardViewModel(
                 state.copy(connectingFromNodeId = null, connectingFromFieldId = null)
             }
 
-            // ── Drag-to-connect ────────────────────────────────────────────────
+            // Drag-to-connect
             is BoardIntent.OnEdgeDragStart -> reduce {
                 state.copy(
                     draggingEdgeFromNodeId = boardIntent.nodeId,
                     draggingEdgeFromFieldId = boardIntent.fieldId,
                     draggingEdgeCurrentPos = null,
+                    draggingEdgeSnapTargetNodeId = null,
+                    draggingEdgeSnapTargetFieldId = null,
+                    draggingEdgeSnapTargetIsRight = null,
                     connectingFromNodeId = null,
                     connectingFromFieldId = null,
                     nodeMenuNodeId = null,
@@ -172,40 +172,58 @@ class BoardViewModel(
             }
 
             is BoardIntent.OnEdgeDragMove -> reduce {
-                state.copy(draggingEdgeCurrentPos = boardIntent.screenPos)
+                state.copy(
+                    draggingEdgeCurrentPos = boardIntent.screenPos,
+                    draggingEdgeSnapTargetNodeId = boardIntent.snappedTargetNodeId,
+                    draggingEdgeSnapTargetFieldId = boardIntent.snappedTargetFieldId,
+                    draggingEdgeSnapTargetIsRight = boardIntent.snappedTargetIsRight,
+                )
             }
 
             is BoardIntent.OnEdgeDragEnd -> {
                 val fromNodeId = state.draggingEdgeFromNodeId
                 val toNodeId = boardIntent.targetNodeId
                 if (fromNodeId != null && toNodeId != null && fromNodeId != toNodeId) {
-                    createEdge(fromNodeId, state.draggingEdgeFromFieldId, toNodeId, boardIntent.targetFieldId)
+                    createEdge(
+                        fromNodeId,
+                        state.draggingEdgeFromFieldId,
+                        toNodeId,
+                        boardIntent.targetFieldId
+                    )
                 }
                 reduce {
                     state.copy(
                         draggingEdgeFromNodeId = null,
                         draggingEdgeFromFieldId = null,
                         draggingEdgeCurrentPos = null,
+                        draggingEdgeSnapTargetNodeId = null,
+                        draggingEdgeSnapTargetFieldId = null,
+                        draggingEdgeSnapTargetIsRight = null,
                     )
                 }
             }
 
-            // ── Edge interaction ──────────────────────────────────────────────
+            // Edge interaction
             is BoardIntent.OnSelectEdge -> reduce {
                 state.copy(selectedEdgeId = boardIntent.edgeId, nodeMenuNodeId = null)
             }
 
             is BoardIntent.OnDeleteEdge -> {
-                reduce { state.copy(edges = state.edges - boardIntent.edgeId, selectedEdgeId = null) }
+                reduce {
+                    state.copy(
+                        edges = state.edges - boardIntent.edgeId,
+                        selectedEdgeId = null
+                    )
+                }
                 repository.sendAction(BoardAction.DeleteEdge(boardIntent.edgeId, uuid()))
             }
 
-            // ── Node selection menu ───────────────────────────────────────────
+            // Node selection menu
             is BoardIntent.OnNodeMenu -> reduce {
                 state.copy(nodeMenuNodeId = boardIntent.nodeId, selectedEdgeId = null)
             }
 
-            // ── Field editor ──────────────────────────────────────────────────
+            // Field editor
             is BoardIntent.OnSelectNode -> reduce {
                 state.copy(selectedNodeId = boardIntent.nodeId, nodeMenuNodeId = null)
             }
@@ -220,25 +238,41 @@ class BoardViewModel(
 
             is BoardIntent.OnRemoveField -> {
                 val node = state.nodes[boardIntent.nodeId] ?: return@intent
-                val updated = node.copy(fields = node.fields.filter { it.id != boardIntent.fieldId })
+                val updated =
+                    node.copy(fields = node.fields.filter { it.id != boardIntent.fieldId })
                 reduce { state.copy(nodes = state.nodes + (boardIntent.nodeId to updated)) }
-                repository.sendAction(BoardAction.RemoveField(boardIntent.nodeId, boardIntent.fieldId, uuid()))
+                repository.sendAction(
+                    BoardAction.RemoveField(
+                        boardIntent.nodeId,
+                        boardIntent.fieldId,
+                        uuid()
+                    )
+                )
             }
 
             is BoardIntent.OnRenameField -> {
                 val node = state.nodes[boardIntent.nodeId] ?: return@intent
                 val updatedFields = node.fields.map {
-                    if (it.id == boardIntent.fieldId) it.copy(name = boardIntent.newName, type = boardIntent.newType) else it
+                    if (it.id == boardIntent.fieldId) it.copy(
+                        name = boardIntent.newName,
+                        type = boardIntent.newType
+                    ) else it
                 }
                 reduce { state.copy(nodes = state.nodes + (boardIntent.nodeId to node.copy(fields = updatedFields))) }
                 repository.sendAction(
-                    BoardAction.RenameField(boardIntent.nodeId, boardIntent.fieldId, boardIntent.newName, boardIntent.newType, uuid())
+                    BoardAction.RenameField(
+                        boardIntent.nodeId,
+                        boardIntent.fieldId,
+                        boardIntent.newName,
+                        boardIntent.newType,
+                        uuid()
+                    )
                 )
             }
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     private fun createEdge(
         sourceNodeId: String, sourceFieldId: String?,
@@ -270,8 +304,7 @@ class BoardViewModel(
     ): Map<String, EntityNode> = remote.mapValues { (id, remoteNode) ->
         val localNode = local[id]
         if (localNode != null && id in locallyMovedNodeIds) {
-            // Node was recently dragged by us — keep our local position,
-            // take everything else (fields, lockedBy) from server
+            // Node was recently dragged by us - keep our local position.
             remoteNode.copy(position = localNode.position)
         } else remoteNode
     }
