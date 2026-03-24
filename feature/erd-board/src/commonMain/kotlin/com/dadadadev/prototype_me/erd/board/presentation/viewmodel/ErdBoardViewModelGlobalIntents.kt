@@ -88,6 +88,40 @@ internal fun ErdBoardViewModel.handleGlobalIntent(boardIntent: ErdBoardIntent) =
             repository.sendActions(buildAddActions(newNodes, newEdges))
         }
 
+        is ErdBoardIntent.OnImportBoard -> {
+            val importedNodes = boardIntent.nodes.associateBy { it.id }
+            val importedEdges = boardIntent.edges.associateBy { it.id }
+
+            // Build sync actions: delete all existing content, then add imported content.
+            val deleteEdgeActions = state.edges.keys.map { deleteEdgeAction(it) }
+            val deleteNodeActions = state.nodes.keys.map { deleteNodeAction(it) }
+            val addActions = buildAddActions(boardIntent.nodes, boardIntent.edges)
+
+            // Reset undo/selection since this is a full board replacement.
+            runtimeState = runtimeState.copy(undoStack = emptyList(), clipboard = null)
+
+            reduce {
+                state.copy(
+                    nodes = importedNodes,
+                    edges = importedEdges,
+                    nodeMenuNodeId = null,
+                    selectedNodeId = null,
+                    selectedEdgeId = null,
+                    connectingFromNodeId = null,
+                    connectingFromFieldId = null,
+                    draggingEdgeFromNodeId = null,
+                    draggingEdgeFromFieldId = null,
+                    draggingEdgeCurrentPos = null,
+                    draggingEdgeSnapTargetNodeId = null,
+                    draggingEdgeSnapTargetFieldId = null,
+                    draggingEdgeSnapTargetIsRight = null,
+                    canUndo = false,
+                )
+            }
+
+            repository.sendActions(deleteEdgeActions + deleteNodeActions + addActions)
+        }
+
         else -> Unit
     }
 }

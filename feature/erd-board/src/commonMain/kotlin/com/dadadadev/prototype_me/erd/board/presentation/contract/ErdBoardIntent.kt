@@ -1,8 +1,10 @@
 package com.dadadadev.prototype_me.erd.board.presentation.contract
 
 import androidx.compose.ui.geometry.Offset
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 
 sealed class ErdBoardIntent {
     // Canvas gestures
@@ -60,4 +62,10 @@ sealed class ErdBoardIntent {
 
     /** Ends a multi-node drag and records it as one undoable operation. */
     data class OnMultiDragEnd(val nodeIds: Set<String>) : ErdBoardIntent()
+
+    // JSON import: replaces the entire board with the provided nodes and edges.
+    data class OnImportBoard(
+        val nodes: List<EntityNode>,
+        val edges: List<RelationEdge>,
+    ) : ErdBoardIntent()
 }

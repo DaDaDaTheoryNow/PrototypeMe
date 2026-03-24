@@ -70,6 +70,7 @@ class ErdBoardViewModel(
             ErdBoardIntent.OnUndo,
             is ErdBoardIntent.OnCopy,
             ErdBoardIntent.OnPaste,
+            is ErdBoardIntent.OnImportBoard,
             -> handleGlobalIntent(boardIntent)
         }
     }

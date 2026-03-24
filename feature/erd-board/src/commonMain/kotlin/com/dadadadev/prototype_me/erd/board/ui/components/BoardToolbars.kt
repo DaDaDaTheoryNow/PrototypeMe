@@ -25,12 +25,13 @@ import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import kotlin.math.roundToInt
 
-/** Bottom bar with add and undo actions. */
+/** Bottom bar with add, undo and JSON-view actions. */
 @Composable
 internal fun AddEntityToolbar(
     modifier: Modifier = Modifier,
     canUndo: Boolean = false,
     onUndo: (() -> Unit)? = null,
+    onShowJson: () -> Unit,
     onAddEntity: () -> Unit,
 ) {
     Box(
@@ -49,13 +50,7 @@ internal fun AddEntityToolbar(
                         fontWeight = FontWeight.Medium,
                     )
                 }
-                // Divider
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(20.dp)
-                        .background(Color(0xFFE0E0E0))
-                )
+                ToolbarDivider()
             }
             TextButton(onClick = onAddEntity) {
                 Text(
@@ -65,8 +60,27 @@ internal fun AddEntityToolbar(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+            ToolbarDivider()
+            TextButton(onClick = onShowJson) {
+                Text(
+                    "{ }",
+                    color = Color(0xFF555555),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun ToolbarDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(20.dp)
+            .background(Color(0xFFE0E0E0)),
+    )
 }
 
 /** Floating toolbar shown next to the selected edge. */

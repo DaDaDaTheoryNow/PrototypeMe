@@ -39,6 +39,7 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
     var marqueeSelectedNodeIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var multiSelectMenuPos by remember { mutableStateOf<Offset?>(null) }
     var showAddNodeDialog by remember { mutableStateOf(false) }
+    var showJsonDialog by remember { mutableStateOf(false) }
     var hasAppliedInitialViewportFit by remember { mutableStateOf(false) }
 
     val selectedNodeIds = remember(marqueeSelectedNodeIds, state.nodes) {
@@ -83,8 +84,8 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
         modifier = Modifier
             .fillMaxSize()
             .boardKeyboardShortcuts(
-                isActive = !showAddNodeDialog && state.selectedNodeId == null,
-                focusRestoreKey = showAddNodeDialog to state.selectedNodeId,
+                isActive = !showAddNodeDialog && !showJsonDialog && state.selectedNodeId == null,
+                focusRestoreKey = Triple(showAddNodeDialog, showJsonDialog, state.selectedNodeId),
                 onEscape = handleEscape,
                 onUndo = { viewModel.onIntent(ErdBoardIntent.OnUndo) },
                 onCopy = {
@@ -115,6 +116,8 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
             selectedNodeIds = selectedNodeIds,
             showAddNodeDialog = showAddNodeDialog,
             onShowAddNodeDialogChange = { showAddNodeDialog = it },
+            showJsonDialog = showJsonDialog,
+            onShowJsonDialogChange = { showJsonDialog = it },
             marqueeStart = marqueeStart,
             marqueeCurrent = marqueeCurrent,
             onMarqueeStartChange = { marqueeStart = it },
