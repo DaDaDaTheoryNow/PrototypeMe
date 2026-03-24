@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -15,12 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.offset
-import com.dadadadev.prototype_me.erd.board.ui.CARD_WIDTH_DP
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenX
+import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenY
 import kotlin.math.roundToInt
 
-/** Floating action menu that appears next to a node (tap-selected). */
 @Composable
 internal fun NodeActionMenu(
     node: EntityNode,
@@ -30,8 +30,9 @@ internal fun NodeActionMenu(
     onEditFields: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val cardRightPx = node.position.x * scale + panOffset.x + CARD_WIDTH_DP * density * scale
-    val cardTopPx = node.position.y * scale + panOffset.y
+    val cardRightPx = boardToScreenX(node.position.x, scale, panOffset.x, density) +
+        node.size.width * density * scale
+    val cardTopPx = boardToScreenY(node.position.y, scale, panOffset.y, density)
 
     Box(
         modifier = Modifier
@@ -56,17 +57,17 @@ internal fun NodeActionMenu(
     }
 }
 
-/** Context menu shown after marquee-selecting multiple nodes (RMB click). */
 @Composable
 internal fun MultiSelectMenu(
     anchorPos: Offset,
     selectedCount: Int,
     screenW: Float,
     screenH: Float,
+    onCopy: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    val menuX = anchorPos.x.coerceIn(4f, screenW - 120f)
-    val menuY = anchorPos.y.coerceIn(4f, screenH - 56f)
+    val menuX = anchorPos.x.coerceIn(4f, screenW - 140f)
+    val menuY = anchorPos.y.coerceIn(4f, screenH - 80f)
 
     Box(
         modifier = Modifier
@@ -82,11 +83,12 @@ internal fun MultiSelectMenu(
                 color = Color(0xFF777777),
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
+            TextButton(onClick = onCopy) {
+                Text("Copy", fontSize = 12.sp, color = Color(0xFF2255CC))
+            }
             TextButton(onClick = onDeleteAll) {
                 Text("Delete", fontSize = 12.sp, color = Color(0xFFCC3333))
             }
         }
     }
 }
-
-

@@ -1,7 +1,7 @@
 package com.dadadadev.prototype_me.domains.erd.design.impl.data.mock
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.BoardContext
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdBoardContext
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
@@ -13,7 +13,7 @@ import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEd
  * User -> Order -> OrderItem <- Product
  */
 object InitialMockData {
-    fun create(): BoardContext {
+    fun create(): ErdBoardContext {
         val nodes = mapOf(
             "user" to EntityNode(
                 id = "user",
@@ -83,7 +83,7 @@ object InitialMockData {
             ),
         )
 
-        return BoardContext(boardId = "board_1", nodes = nodes, edges = edges)
+        return ErdBoardContext(boardId = "board_1", nodes = nodes, edges = edges)
     }
 }
 

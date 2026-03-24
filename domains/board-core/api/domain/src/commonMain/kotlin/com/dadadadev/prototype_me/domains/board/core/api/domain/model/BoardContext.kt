@@ -6,7 +6,7 @@ data class BoardContext<TNode : BoardEntity, TEdge : BoardEdge>(
     val edges: Map<String, TEdge>,
 )
 
-fun <TNode : BoardEntity, TEdge : BoardEdge> BoardContext<TNode, TEdge>.toBoardSnapshot(): BoardSnapshot<TNode> =
+fun <TNode : BoardEntity, TEdge : BoardEdge> BoardContext<TNode, TEdge>.toBoardSnapshot(): BoardSnapshot<TNode, TEdge> =
     BoardSnapshot(
         entities = nodes,
         edges = edges,

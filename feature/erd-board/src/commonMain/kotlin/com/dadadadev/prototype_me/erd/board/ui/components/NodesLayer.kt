@@ -18,12 +18,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.offset
-import com.dadadadev.prototype_me.erd.board.presentation.BoardIntent
-import com.dadadadev.prototype_me.erd.board.ui.EDGE_SNAP_IN_MULTIPLIER
-import com.dadadadev.prototype_me.erd.board.ui.EDGE_SNAP_OUT_MULTIPLIER
-import com.dadadadev.prototype_me.erd.board.ui.EntityCard
-import com.dadadadev.prototype_me.erd.board.ui.PortKey
-import com.dadadadev.prototype_me.erd.board.ui.findNearestTargetPort
+import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
+import com.dadadadev.prototype_me.erd.board.ui.canvas.EDGE_SNAP_IN_MULTIPLIER
+import com.dadadadev.prototype_me.erd.board.ui.canvas.EDGE_SNAP_OUT_MULTIPLIER
+import com.dadadadev.prototype_me.erd.board.ui.node.EntityCard
+import com.dadadadev.prototype_me.erd.board.ui.canvas.PortKey
+import com.dadadadev.prototype_me.erd.board.ui.canvas.findNearestTargetPort
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import kotlin.math.roundToInt
 
@@ -32,6 +32,7 @@ internal fun NodesLayer(
     nodes: Map<String, EntityNode>,
     scale: Float,
     panOffset: Offset,
+    density: Float,
     portPositions: Map<PortKey, Offset>,
     connectingFromNodeId: String?,
     connectingFromFieldId: String?,
@@ -43,7 +44,7 @@ internal fun NodesLayer(
     connectedFieldKeys: Set<String>,
     isConnecting: Boolean,
     portHitPx: Float,
-    onIntent: (BoardIntent) -> Unit,
+    onIntent: (ErdBoardIntent) -> Unit,
 ) {
     val latestPortPositions by rememberUpdatedState(portPositions)
 
@@ -54,17 +55,17 @@ internal fun NodesLayer(
                 node = node,
                 scale = scale,
                 panOffset = panOffset,
+                density = density,
                 isSourceNode = node.id == connectingFromNodeId ||
                         node.id == draggingEdgeFromNodeId ||
                         node.id == nodeMenuNodeId,
-                isConnecting = isConnecting,
                 isSelected = node.id in selectedNodeIds,
                 highlightedFieldIds = highlightedFieldIds,
-                onDragStart = { onIntent(BoardIntent.OnDragStart(node.id)) },
-                onDrag = { delta -> onIntent(BoardIntent.OnDragNode(node.id, delta)) },
-                onDragEnd = { onIntent(BoardIntent.OnDragEnd(node.id)) },
-                onTap = { onIntent(BoardIntent.OnNodeMenu(node.id)) },
-                onLongPress = { onIntent(BoardIntent.OnSelectNode(node.id)) },
+                onDragStart = { onIntent(ErdBoardIntent.OnDragStart(node.id)) },
+                onDrag = { delta -> onIntent(ErdBoardIntent.OnDragNode(node.id, delta)) },
+                onDragEnd = { onIntent(ErdBoardIntent.OnDragEnd(node.id)) },
+                onTap = { onIntent(ErdBoardIntent.OnNodeMenu(node.id)) },
+                onLongPress = { onIntent(ErdBoardIntent.OnSelectNode(node.id)) },
             )
         }
     }
@@ -143,13 +144,13 @@ internal fun NodesLayer(
                                         maxDistancePx = portHitPx,
                                     )
                                     onIntent(
-                                        BoardIntent.OnEdgeDragEnd(
+                                        ErdBoardIntent.OnEdgeDragEnd(
                                             finalTarget?.first?.nodeId,
                                             finalTarget?.first?.fieldId,
                                         )
                                     )
                                 } else {
-                                    onIntent(BoardIntent.OnNodeFieldTap(portKey.nodeId, portKey.fieldId))
+                                    onIntent(ErdBoardIntent.OnNodeFieldTap(portKey.nodeId, portKey.fieldId))
                                 }
                                 break
                             }
@@ -158,12 +159,12 @@ internal fun NodesLayer(
                                 (latestLocalPos - down.position).getDistance() > viewConfiguration.touchSlop
                             ) {
                                 isDragging = true
-                                onIntent(BoardIntent.OnEdgeDragStart(portKey.nodeId, portKey.fieldId))
+                                onIntent(ErdBoardIntent.OnEdgeDragStart(portKey.nodeId, portKey.fieldId))
                             }
 
                             if (isDragging) {
                                 onIntent(
-                                    BoardIntent.OnEdgeDragMove(
+                                    ErdBoardIntent.OnEdgeDragMove(
                                         screenPos = latestRenderScreenPos,
                                         snappedTargetNodeId = snappedTarget?.first?.nodeId,
                                         snappedTargetFieldId = snappedTarget?.first?.fieldId,
@@ -180,5 +181,6 @@ internal fun NodesLayer(
         }
     }
 }
+
 
 

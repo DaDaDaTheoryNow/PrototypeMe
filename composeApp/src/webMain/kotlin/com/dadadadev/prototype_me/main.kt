@@ -7,13 +7,13 @@ import androidx.compose.ui.window.ComposeViewport
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import com.dadadadev.prototype_me.di.boardModule
+import com.dadadadev.prototype_me.di.erdBoardModule
 import org.koin.core.context.startKoin
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     startKoin {
-        modules(boardModule)
+        modules(erdBoardModule)
     }
     ComposeViewport {
         // ComposeViewport does not provide LocalViewModelStoreOwner on web targets.

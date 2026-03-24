@@ -43,23 +43,15 @@ include(":core:ui")
 // Board Core modules
 include(":domains:board-core:api:domain")
 include(":domains:board-core:api:data")
-include(":domains:board-core:impl:domain")
-include(":domains:board-core:impl:data")
 
 // ERD Design modules
 include(":domains:erd-design:api:domain")
 include(":domains:erd-design:api:data")
-include(":domains:erd-design:impl:domain")
 include(":domains:erd-design:impl:data")
 
 // Board System Design modules
-include(":domains:board-sysdesign:api:domain")
-include(":domains:board-sysdesign:api:data")
-include(":domains:board-sysdesign:impl:domain")
-include(":domains:board-sysdesign:impl:data")
 
 // Feature modules
 include(":feature:erd-board")
 include(":feature:board-core")
-
 

@@ -1,7 +1,7 @@
 package com.dadadadev.prototype_me
 
 import android.app.Application
-import com.dadadadev.prototype_me.di.boardModule
+import com.dadadadev.prototype_me.di.erdBoardModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -10,7 +10,7 @@ class PrototypeMeApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@PrototypeMeApp)
-            modules(boardModule)
+            modules(erdBoardModule)
         }
     }
 }

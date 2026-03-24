@@ -21,6 +21,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.feature.boardCore)
             implementation(projects.domains.erdDesign.api.data)
             implementation(projects.core.mvi)
             implementation(projects.core.ui)
@@ -55,7 +56,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-
 
 
 

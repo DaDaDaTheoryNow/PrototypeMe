@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,35 +20,56 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.offset
-import com.dadadadev.prototype_me.erd.board.ui.buildEdgeLabel
+import com.dadadadev.prototype_me.erd.board.ui.canvas.buildEdgeLabel
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import kotlin.math.roundToInt
 
-/** Bottom bar with the "+ Add Entity" button. */
+/** Bottom bar with add and undo actions. */
 @Composable
 internal fun AddEntityToolbar(
     modifier: Modifier = Modifier,
+    canUndo: Boolean = false,
+    onUndo: (() -> Unit)? = null,
     onAddEntity: () -> Unit,
 ) {
     Box(
         modifier = modifier
             .background(Color.White, RoundedCornerShape(28.dp))
             .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(28.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
     ) {
-        TextButton(onClick = onAddEntity) {
-            Text(
-                "+ Add Entity",
-                color = Color(0xFF111111),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onUndo != null) {
+                TextButton(onClick = onUndo, enabled = canUndo) {
+                    Text(
+                        text = "Undo",
+                        color = if (canUndo) Color(0xFF444444) else Color(0xFFBBBBBB),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+                // Divider
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(20.dp)
+                        .background(Color(0xFFE0E0E0))
+                )
+            }
+            TextButton(onClick = onAddEntity) {
+                Text(
+                    "+ Add Entity",
+                    color = Color(0xFF111111),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }
 
-/** Floating toolbar that appears near a selected edge. */
+/** Floating toolbar shown next to the selected edge. */
 @Composable
 internal fun EdgeSelectionToolbar(
     edge: RelationEdge,
@@ -80,7 +103,7 @@ internal fun EdgeSelectionToolbar(
     }
 }
 
-/** Top-center hint banner shown while tap-to-connect mode is active. */
+/** Top-center hint banner shown while connect mode is active. */
 @Composable
 internal fun ConnectingHintBanner(
     connectingFromNodeId: String?,
@@ -108,5 +131,4 @@ internal fun ConnectingHintBanner(
         )
     }
 }
-
 

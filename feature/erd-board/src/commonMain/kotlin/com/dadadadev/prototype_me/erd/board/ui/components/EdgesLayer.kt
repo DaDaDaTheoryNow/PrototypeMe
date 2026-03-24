@@ -11,11 +11,12 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import com.dadadadev.prototype_me.erd.board.ui.DragSourceAnchor
-import com.dadadadev.prototype_me.erd.board.ui.EdgeAnchors
-import com.dadadadev.prototype_me.erd.board.ui.PortKey
-import com.dadadadev.prototype_me.erd.board.ui.computeEdgeAnchors
-import com.dadadadev.prototype_me.erd.board.ui.findSourceDragPortAnchor
+import com.dadadadev.prototype_me.erd.board.ui.canvas.DragSourceAnchor
+import com.dadadadev.prototype_me.erd.board.ui.canvas.EdgeAnchors
+import com.dadadadev.prototype_me.erd.board.ui.canvas.EdgeSideOrientation
+import com.dadadadev.prototype_me.erd.board.ui.canvas.PortKey
+import com.dadadadev.prototype_me.erd.board.ui.canvas.computeEdgeAnchors
+import com.dadadadev.prototype_me.erd.board.ui.canvas.findSourceDragPortAnchor
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import kotlin.math.abs
@@ -28,6 +29,7 @@ internal fun EdgesLayer(
     panOffset: Offset,
     density: Float,
     selectedEdgeId: String?,
+    edgeSideOrientations: Map<String, EdgeSideOrientation>,
     portPositions: Map<PortKey, Offset>,
     draggingEdgeFromNodeId: String?,
     draggingEdgeFromFieldId: String?,
@@ -49,7 +51,14 @@ internal fun EdgesLayer(
 
         // Draw committed edges
         edges.values.forEach { edge ->
-            val anchors = computeEdgeAnchors(edge, nodes, scale, panOffset, density) ?: return@forEach
+            val anchors = computeEdgeAnchors(
+                edge = edge,
+                nodes = nodes,
+                scale = scale,
+                panOffset = panOffset,
+                density = density,
+                sideOrientation = edgeSideOrientations[edge.id],
+            ) ?: return@forEach
             val spread = (edgePortIndex[edge.id] ?: 0) * 5f
             val isSelected = edge.id == selectedEdgeId
             val edgeColor = if (isSelected) Color(0xFF111111) else Color(0xFF888888)
