@@ -41,6 +41,16 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
     var showAddNodeDialog by remember { mutableStateOf(false) }
     var showJsonDialog by remember { mutableStateOf(false) }
     var hasAppliedInitialViewportFit by remember { mutableStateOf(false) }
+    val currentBoardJson = remember(showJsonDialog, state.nodes, state.edges) {
+        if (!showJsonDialog) {
+            null
+        } else {
+            viewModel.exportBoardJson(
+                nodes = state.nodes,
+                edges = state.edges,
+            )
+        }
+    }
 
     val selectedNodeIds = remember(marqueeSelectedNodeIds, state.nodes) {
         marqueeSelectedNodeIds.filterTo(mutableSetOf()) { nodeId -> state.nodes.containsKey(nodeId) }
@@ -118,6 +128,14 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
             onShowAddNodeDialogChange = { showAddNodeDialog = it },
             showJsonDialog = showJsonDialog,
             onShowJsonDialogChange = { showJsonDialog = it },
+            currentBoardJson = currentBoardJson,
+            onImportBoardJson = { jsonText ->
+                val importedBoard = viewModel.importBoardJson(jsonText).getOrNull()
+                if (importedBoard != null) {
+                    viewModel.onIntent(ErdBoardIntent.OnImportBoard(snapshot = importedBoard))
+                    showJsonDialog = false
+                }
+            },
             marqueeStart = marqueeStart,
             marqueeCurrent = marqueeCurrent,
             onMarqueeStartChange = { marqueeStart = it },
@@ -138,4 +156,3 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
         }
     }
 }
-

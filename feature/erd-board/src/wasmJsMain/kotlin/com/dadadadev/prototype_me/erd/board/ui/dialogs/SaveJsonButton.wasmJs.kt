@@ -1,4 +1,4 @@
-package com.dadadadev.prototype_me.erd.board.ui.json
+package com.dadadadev.prototype_me.erd.board.ui.dialogs
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -8,6 +8,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import kotlin.js.ExperimentalWasmJsInterop
 
 /**
  * Triggers a browser file download via a dynamically created anchor element.
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
         document.body.removeChild(a);
     }"""
 )
+@OptIn(ExperimentalWasmJsInterop::class)
 private external fun triggerBrowserDownload(filename: String, content: String)
 
 @Composable

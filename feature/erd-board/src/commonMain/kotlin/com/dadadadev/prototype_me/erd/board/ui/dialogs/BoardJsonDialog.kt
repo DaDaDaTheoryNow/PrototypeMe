@@ -23,8 +23,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,14 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dadadadev.prototype_me.erd.board.ui.json.SaveJsonButton
 
 private const val EXPORT_FILENAME = "board.json"
 
@@ -71,7 +68,7 @@ internal fun BoardJsonDialog(
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                TabRow(
+                SecondaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
                     contentColor = Color(0xFF111111),
@@ -103,12 +100,9 @@ internal fun BoardJsonDialog(
         confirmButton = {
             when (selectedTab) {
                 0 -> {
-                    val clipboard = LocalClipboardManager.current
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         SaveJsonButton(filename = EXPORT_FILENAME, content = currentJson)
-                        TextButton(onClick = { clipboard.setText(AnnotatedString(currentJson)) }) {
-                            Text("Copy", color = Color(0xFF111111), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        }
+                        CopyJsonButton(content = currentJson)
                     }
                 }
                 1 -> {

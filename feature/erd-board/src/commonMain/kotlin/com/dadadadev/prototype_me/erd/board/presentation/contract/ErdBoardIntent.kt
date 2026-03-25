@@ -1,6 +1,7 @@
 package com.dadadadev.prototype_me.erd.board.presentation.contract
 
 import androidx.compose.ui.geometry.Offset
+import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSnapshot
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
@@ -65,7 +66,6 @@ sealed class ErdBoardIntent {
 
     // JSON import: replaces the entire board with the provided nodes and edges.
     data class OnImportBoard(
-        val nodes: List<EntityNode>,
-        val edges: List<RelationEdge>,
+        val snapshot: BoardSnapshot<EntityNode, RelationEdge>,
     ) : ErdBoardIntent()
 }

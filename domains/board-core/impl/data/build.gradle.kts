@@ -18,20 +18,16 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":domains:erd-design:api:data"))
-            implementation(project(":domains:erd-design:api:domain"))
-            implementation(project(":domains:board-core:impl:data"))
-            implementation(libs.kotlinx.coroutines.core)
+            implementation(project(":domains:board-core:api:data"))
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.koin.core)
         }
         commonTest.dependencies { implementation(libs.kotlin.test) }
     }
 }
 
 android {
-    namespace = "com.dadadadev.prototype_me.domains.erd.design.impl.data"
+    namespace = "com.dadadadev.prototype_me.domains.board.core.impl.data"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig { minSdk = libs.versions.android.minSdk.get().toInt() }
     compileOptions {
@@ -39,4 +35,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-

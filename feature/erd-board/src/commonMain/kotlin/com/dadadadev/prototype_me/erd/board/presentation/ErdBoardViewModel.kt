@@ -1,8 +1,12 @@
 package com.dadadadev.prototype_me.erd.board.presentation
 
 import com.dadadadev.prototype_me.core.mvi.BaseViewModel
+import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSnapshot
+import com.dadadadev.prototype_me.domains.erd.design.api.data.codec.ErdBoardJsonCodec
 import com.dadadadev.prototype_me.domains.erd.design.api.data.repository.ErdBoardRepository
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardSideEffect
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardState
@@ -18,6 +22,7 @@ import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.observeBoardS
 
 class ErdBoardViewModel(
     internal val repository: ErdBoardRepository,
+    private val boardJsonCodec: ErdBoardJsonCodec,
 ) : BaseViewModel<ErdBoardState, ErdBoardSideEffect>(ErdBoardState()) {
 
     internal val dragOrigins = mutableMapOf<String, Position>()
@@ -74,4 +79,17 @@ class ErdBoardViewModel(
             -> handleGlobalIntent(boardIntent)
         }
     }
+
+    fun exportBoardJson(
+        nodes: Map<String, EntityNode>,
+        edges: Map<String, RelationEdge>,
+    ): String = boardJsonCodec.encode(
+        BoardSnapshot(
+            entities = nodes,
+            edges = edges,
+        ),
+    )
+
+    fun importBoardJson(rawJson: String): Result<BoardSnapshot<EntityNode, RelationEdge>> =
+        boardJsonCodec.decode(rawJson)
 }

@@ -1,4 +1,4 @@
-package com.dadadadev.prototype_me.erd.board.ui.json
+package com.dadadadev.prototype_me.erd.board.ui.dialogs
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

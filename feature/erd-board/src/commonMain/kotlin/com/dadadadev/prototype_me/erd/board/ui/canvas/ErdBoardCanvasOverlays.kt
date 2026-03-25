@@ -3,7 +3,6 @@ package com.dadadadev.prototype_me.erd.board.ui.canvas
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,8 +18,6 @@ import com.dadadadev.prototype_me.erd.board.ui.components.NodeActionMenu
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.AddEntityDialog
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.BoardJsonDialog
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.NodeDetailDialog
-import com.dadadadev.prototype_me.erd.board.ui.json.parseJsonToBoard
-import com.dadadadev.prototype_me.erd.board.ui.json.toJsonString
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.screenToBoardOffset
 
 @Composable
@@ -35,6 +32,8 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
     onShowAddNodeDialogChange: (Boolean) -> Unit,
     showJsonDialog: Boolean,
     onShowJsonDialogChange: (Boolean) -> Unit,
+    currentBoardJson: String?,
+    onImportBoardJson: (String) -> Unit,
     multiSelectMenuPos: Offset?,
     onMultiSelectMenuPosChange: (Offset?) -> Unit,
     onMarqueeSelectionChange: (Set<String>) -> Unit,
@@ -138,15 +137,9 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
     }
 
     if (showJsonDialog) {
-        // Compute JSON only while the dialog is open to avoid serializing every recomposition.
-        val json = remember(state.nodes, state.edges) { state.toJsonString() }
         BoardJsonDialog(
-            currentJson = json,
-            onImport = { jsonText ->
-                val (nodes, edges) = parseJsonToBoard(jsonText) ?: return@BoardJsonDialog
-                onIntent(ErdBoardIntent.OnImportBoard(nodes = nodes, edges = edges))
-                onShowJsonDialogChange(false)
-            },
+            currentJson = checkNotNull(currentBoardJson),
+            onImport = onImportBoardJson,
             onDismiss = { onShowJsonDialogChange(false) },
         )
     }

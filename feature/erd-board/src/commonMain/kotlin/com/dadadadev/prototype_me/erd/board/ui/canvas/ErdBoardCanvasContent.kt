@@ -36,6 +36,8 @@ internal fun ErdBoardCanvasContent(
     onShowAddNodeDialogChange: (Boolean) -> Unit,
     showJsonDialog: Boolean,
     onShowJsonDialogChange: (Boolean) -> Unit,
+    currentBoardJson: String?,
+    onImportBoardJson: (String) -> Unit,
     marqueeStart: Offset?,
     marqueeCurrent: Offset?,
     onMarqueeStartChange: (Offset?) -> Unit,
@@ -251,6 +253,8 @@ internal fun ErdBoardCanvasContent(
             onShowAddNodeDialogChange = onShowAddNodeDialogChange,
             showJsonDialog = showJsonDialog,
             onShowJsonDialogChange = onShowJsonDialogChange,
+            currentBoardJson = currentBoardJson,
+            onImportBoardJson = onImportBoardJson,
             multiSelectMenuPos = multiSelectMenuPos,
             onMultiSelectMenuPosChange = onMultiSelectMenuPosChange,
             onMarqueeSelectionChange = onMarqueeSelectionChange,
@@ -258,4 +262,3 @@ internal fun ErdBoardCanvasContent(
         )
     }
 }
-
