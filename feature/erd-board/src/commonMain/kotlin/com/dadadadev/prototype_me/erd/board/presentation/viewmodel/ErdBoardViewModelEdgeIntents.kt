@@ -85,7 +85,7 @@ internal fun ErdBoardViewModel.handleEdgeIntent(boardIntent: ErdBoardIntent) = i
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(deleteEdgeAction(boardIntent.edgeId))
+            useCases.deleteEdge(boardIntent.edgeId)
         }
 
         is ErdBoardIntent.OnNodeMenu -> reduce {

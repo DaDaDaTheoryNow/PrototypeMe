@@ -18,13 +18,23 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(project(":core:common"))
+            implementation(project(":core:network"))
+
             implementation(project(":domains:erd-design:api:data"))
             implementation(project(":domains:erd-design:api:domain"))
             implementation(project(":domains:board-core:impl:data"))
+            implementation(project(":domains:board-core:api:domain"))
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.koin.core)
+
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.websockets)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
         commonTest.dependencies { implementation(libs.kotlin.test) }
     }
@@ -39,4 +49,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-

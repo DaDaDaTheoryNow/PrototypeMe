@@ -6,7 +6,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.isSecondaryPressed
-import kotlinx.coroutines.withTimeoutOrNull
 
 suspend fun PointerInputScope.canvasGestureHandler(
     onPanZoom: (centroid: Offset, pan: Offset, zoom: Float) -> Unit,
@@ -85,78 +84,6 @@ suspend fun PointerInputScope.canvasGestureHandler(
                 secondaryPointerId = Long.MIN_VALUE
                 secondaryPosition = null
             }
-        }
-    }
-}
-
-suspend fun PointerInputScope.nodeGestureHandler(
-    scale: Float,
-    onDragStart: () -> Unit,
-    onDrag: (Offset) -> Unit,
-    onDragEnd: () -> Unit,
-    onTap: () -> Unit,
-    onLongPress: () -> Unit,
-) {
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = true)
-        down.consume()
-
-        val downPosition = down.position
-        var isDragging = false
-        var wasReleased = false
-
-        val completedBeforeLongPress = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-            while (true) {
-                val event = awaitPointerEvent()
-                val change = event.changes.find { it.id == down.id } ?: break
-
-                if (!change.pressed) {
-                    wasReleased = true
-                    change.consume()
-                    break
-                }
-
-                val distance = (change.position - downPosition).getDistance()
-                if (!isDragging && distance > viewConfiguration.touchSlop) {
-                    isDragging = true
-                    onDragStart()
-                }
-
-                if (isDragging) {
-                    change.consume()
-                    onDrag(
-                        Offset(
-                            x = (change.position.x - change.previousPosition.x) * scale,
-                            y = (change.position.y - change.previousPosition.y) * scale,
-                        ),
-                    )
-                }
-            }
-        }
-
-        if (isDragging) {
-            if (!wasReleased) {
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.find { it.id == down.id } ?: break
-                    if (!change.pressed) {
-                        change.consume()
-                        break
-                    }
-                    change.consume()
-                    onDrag(
-                        Offset(
-                            x = (change.position.x - change.previousPosition.x) * scale,
-                            y = (change.position.y - change.previousPosition.y) * scale,
-                        ),
-                    )
-                }
-            }
-            onDragEnd()
-        } else if (completedBeforeLongPress == null) {
-            onLongPress()
-        } else if (wasReleased) {
-            onTap()
         }
     }
 }

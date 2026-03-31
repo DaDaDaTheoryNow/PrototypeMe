@@ -15,14 +15,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 import com.dadadadev.prototype_me.erd.board.ui.canvas.buildEdgeLabel
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 import kotlin.math.roundToInt
 
 /** Bottom bar with add, undo and JSON-view actions. */
@@ -33,22 +35,23 @@ internal fun AddEntityToolbar(
     canUndo: Boolean = false,
     onUndo: (() -> Unit)? = null,
     onShowJson: () -> Unit,
+    onShare: () -> Unit,
     onAddEntity: () -> Unit,
 ) {
     HorizontalFloatingToolbar(
         expanded = true,
         modifier = modifier,
         colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-            toolbarContainerColor = Color.White,
+            toolbarContainerColor = ErdBoardColors.surfaceToolbar,
         ),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+        contentPadding = PaddingValues(horizontal = ErdBoardDimens.TOOLBAR_PADDING_H_DP.dp, vertical = ErdBoardDimens.TOOLBAR_PADDING_V_DP.dp),
     ) {
         if (onUndo != null) {
             TextButton(onClick = onUndo, enabled = canUndo) {
                 Text(
-                    text = "Undo",
-                    color = if (canUndo) Color(0xFF444444) else Color(0xFFBBBBBB),
-                    fontSize = 13.sp,
+                    text = ErdBoardStrings.TOOLBAR_UNDO,
+                    color = if (canUndo) ErdBoardColors.toolbarEnabled else ErdBoardColors.toolbarDisabled,
+                    fontSize = ErdBoardDimens.TOOLBAR_FONT_LARGE_SP.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }
@@ -56,18 +59,27 @@ internal fun AddEntityToolbar(
         }
         TextButton(onClick = onAddEntity) {
             Text(
-                "+ Add Entity",
-                color = Color(0xFF111111),
-                fontSize = 13.sp,
+                ErdBoardStrings.TOOLBAR_ADD_ENTITY,
+                color = ErdBoardColors.textPrimary,
+                fontSize = ErdBoardDimens.TOOLBAR_FONT_LARGE_SP.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }
         ToolbarDivider()
         TextButton(onClick = onShowJson) {
             Text(
-                "{ }",
-                color = Color(0xFF555555),
-                fontSize = 13.sp,
+                ErdBoardStrings.TOOLBAR_JSON,
+                color = ErdBoardColors.textMuted,
+                fontSize = ErdBoardDimens.TOOLBAR_FONT_LARGE_SP.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+        ToolbarDivider()
+        TextButton(onClick = onShare) {
+            Text(
+                ErdBoardStrings.TOOLBAR_SHARE,
+                color = ErdBoardColors.textMuted,
+                fontSize = ErdBoardDimens.TOOLBAR_FONT_LARGE_SP.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -78,10 +90,10 @@ internal fun AddEntityToolbar(
 private fun RowScope.ToolbarDivider() {
     VerticalDivider(
         modifier = Modifier
-            .height(20.dp)
-            .padding(horizontal = 2.dp)
+            .height(ErdBoardDimens.TOOLBAR_DIVIDER_HEIGHT_DP.dp)
+            .padding(horizontal = ErdBoardDimens.TOOLBAR_DIVIDER_PADDING_H_DP.dp)
             .align(Alignment.CenterVertically),
-        color = Color(0xFFE0E0E0),
+        color = ErdBoardColors.separator,
     )
 }
 
@@ -89,35 +101,35 @@ private fun RowScope.ToolbarDivider() {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun EdgeSelectionToolbar(
-    edge: RelationEdge,
+    edge: ErdRelationEdge,
     midpoint: Offset?,
     screenW: Float,
     screenH: Float,
-    nodes: Map<String, EntityNode>,
+    nodes: Map<String, ErdEntityNode>,
     onDeleteEdge: () -> Unit,
 ) {
-    val tbX = ((midpoint?.x ?: (screenW / 2f)) - 60f).coerceIn(4f, screenW - 140f)
-    val tbY = ((midpoint?.y ?: (screenH - 80f)) - 48f).coerceIn(4f, screenH - 48f)
+    val tbX = ((midpoint?.x ?: (screenW / 2f)) - ErdBoardDimens.EDGE_TOOLBAR_HALF_WIDTH_PX).coerceIn(ErdBoardDimens.MENU_SCREEN_MARGIN_PX, screenW - ErdBoardDimens.MENU_ESTIMATED_WIDTH_PX)
+    val tbY = ((midpoint?.y ?: (screenH - ErdBoardDimens.MENU_ESTIMATED_HEIGHT_PX)) - ErdBoardDimens.EDGE_TOOLBAR_HEIGHT_PX).coerceIn(ErdBoardDimens.MENU_SCREEN_MARGIN_PX, screenH - ErdBoardDimens.EDGE_TOOLBAR_HEIGHT_PX)
 
     HorizontalFloatingToolbar(
         expanded = true,
         modifier = Modifier.offset { IntOffset(tbX.roundToInt(), tbY.roundToInt()) },
         colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-            toolbarContainerColor = Color.White,
+            toolbarContainerColor = ErdBoardColors.surfaceToolbar,
         ),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+        contentPadding = PaddingValues(horizontal = ErdBoardDimens.TOOLBAR_PADDING_H_DP.dp, vertical = ErdBoardDimens.TOOLBAR_PADDING_V_DP.dp),
     ) {
         Text(
             text = buildEdgeLabel(edge, nodes),
-            fontSize = 11.sp,
-            color = Color(0xFF666666),
-            modifier = Modifier.padding(horizontal = 8.dp),
+            fontSize = ErdBoardDimens.TOOLBAR_FONT_SMALL_SP.sp,
+            color = ErdBoardColors.textSubtle,
+            modifier = Modifier.padding(horizontal = ErdBoardDimens.TOOLBAR_EDGE_LABEL_PADDING_H_DP.dp),
         )
         TextButton(onClick = onDeleteEdge) {
             Text(
-                "Delete",
-                color = Color(0xFFCC3333),
-                fontSize = 12.sp,
+                ErdBoardStrings.EDGE_DELETE,
+                color = ErdBoardColors.accentRed,
+                fontSize = ErdBoardDimens.TOOLBAR_FONT_MEDIUM_SP.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -130,7 +142,7 @@ internal fun EdgeSelectionToolbar(
 internal fun ConnectingHintBanner(
     connectingFromNodeId: String?,
     connectingFromFieldId: String?,
-    nodes: Map<String, EntityNode>,
+    nodes: Map<String, ErdEntityNode>,
     modifier: Modifier = Modifier,
 ) {
     if (connectingFromNodeId == null) return
@@ -144,15 +156,15 @@ internal fun ConnectingHintBanner(
         expanded = true,
         modifier = modifier,
         colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-            toolbarContainerColor = Color(0xFF111111),
-            toolbarContentColor = Color.White,
+            toolbarContainerColor = ErdBoardColors.toolbarBackground,
+            toolbarContentColor = ErdBoardColors.textOnAccent,
         ),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = ErdBoardDimens.TOOLBAR_HINT_PADDING_H_DP.dp, vertical = ErdBoardDimens.TOOLBAR_HINT_PADDING_V_DP.dp),
     ) {
         Text(
-            text = if (srcName == null) "Tap a port to start" else "From: $srcName  →  tap target",
-            color = Color.White,
-            fontSize = 12.sp,
+            text = if (srcName == null) ErdBoardStrings.CONNECT_TAP_TO_START else ErdBoardStrings.connectFromLabel(srcName),
+            color = ErdBoardColors.textOnAccent,
+            fontSize = ErdBoardDimens.TOOLBAR_FONT_MEDIUM_SP.sp,
             fontWeight = FontWeight.Medium,
         )
     }

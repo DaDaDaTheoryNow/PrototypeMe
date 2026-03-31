@@ -11,9 +11,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 
 @Composable
 internal fun AddEntityDialog(
@@ -24,37 +26,36 @@ internal fun AddEntityDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        shape = RoundedCornerShape(12.dp),
+        containerColor = ErdBoardColors.surfaceDialog,
+        shape = RoundedCornerShape(ErdBoardDimens.DIALOG_CORNER_RADIUS_DP.dp),
         title = {
-            Text("New Entity", fontWeight = FontWeight.SemiBold, color = Color(0xFF111111))
+            Text(ErdBoardStrings.DIALOG_NEW_ENTITY_TITLE, fontWeight = FontWeight.SemiBold, color = ErdBoardColors.textPrimary)
         },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text("Entity name", color = Color(0xFFAAAAAA)) },
+                placeholder = { Text(ErdBoardStrings.DIALOG_ENTITY_NAME_PLACEHOLDER, color = ErdBoardColors.textPlaceholder) },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF111111),
-                    unfocusedBorderColor = Color(0xFFCCCCCC),
-                    cursorColor = Color(0xFF111111),
+                    focusedBorderColor = ErdBoardColors.borderStrong,
+                    unfocusedBorderColor = ErdBoardColors.borderDefault,
+                    cursorColor = ErdBoardColors.borderStrong,
                 ),
             )
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(name.ifBlank { "Entity" })
+                onConfirm(name.ifBlank { ErdBoardStrings.DIALOG_ENTITY_DEFAULT_NAME })
                 name = ""
             }) {
-                Text("Add", color = Color(0xFF111111), fontWeight = FontWeight.SemiBold)
+                Text(ErdBoardStrings.DIALOG_ADD, color = ErdBoardColors.textPrimary, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color(0xFF888888))
+                Text(ErdBoardStrings.DIALOG_CANCEL, color = ErdBoardColors.textDisabled)
             }
         },
     )
 }
-

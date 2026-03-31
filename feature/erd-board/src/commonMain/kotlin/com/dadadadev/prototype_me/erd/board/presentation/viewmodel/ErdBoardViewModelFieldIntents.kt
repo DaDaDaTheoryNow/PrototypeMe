@@ -1,7 +1,6 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.withFields
+import com.dadadadev.prototype_me.erd.board.layout.withFields
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo.ErdUndoAction
@@ -14,7 +13,7 @@ internal fun ErdBoardViewModel.handleFieldIntent(boardIntent: ErdBoardIntent) = 
 
         is ErdBoardIntent.OnAddField -> {
             val node = state.nodes[boardIntent.nodeId] ?: return@intent
-            val field = NodeField(newBoardActionId(), boardIntent.name, boardIntent.type)
+            val field = useCases.addField(boardIntent.nodeId, boardIntent.name, boardIntent.type)
             val updatedNode = node.withFields(node.fields + field)
             runtimeState = runtimeState.pushUndo(ErdUndoAction.FieldAdded(boardIntent.nodeId, field.id))
             reduce {
@@ -23,7 +22,6 @@ internal fun ErdBoardViewModel.handleFieldIntent(boardIntent: ErdBoardIntent) = 
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(addFieldAction(boardIntent.nodeId, field))
         }
 
         is ErdBoardIntent.OnRemoveField -> {
@@ -37,7 +35,7 @@ internal fun ErdBoardViewModel.handleFieldIntent(boardIntent: ErdBoardIntent) = 
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(removeFieldAction(boardIntent.nodeId, boardIntent.fieldId))
+            useCases.removeField(boardIntent.nodeId, boardIntent.fieldId)
         }
 
         is ErdBoardIntent.OnRenameField -> {
@@ -64,13 +62,11 @@ internal fun ErdBoardViewModel.handleFieldIntent(boardIntent: ErdBoardIntent) = 
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(
-                renameFieldAction(
-                    nodeId = boardIntent.nodeId,
-                    fieldId = boardIntent.fieldId,
-                    newName = boardIntent.newName,
-                    newType = boardIntent.newType,
-                ),
+            useCases.renameField(
+                nodeId = boardIntent.nodeId,
+                fieldId = boardIntent.fieldId,
+                newName = boardIntent.newName,
+                newType = boardIntent.newType,
             )
         }
 

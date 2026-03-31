@@ -17,6 +17,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(project(":core:common"))
             api(project(":domains:erd-design:api:domain"))
             api(project(":domains:board-core:api:data"))
             api(libs.kotlinx.coroutines.core)
@@ -34,4 +35,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-

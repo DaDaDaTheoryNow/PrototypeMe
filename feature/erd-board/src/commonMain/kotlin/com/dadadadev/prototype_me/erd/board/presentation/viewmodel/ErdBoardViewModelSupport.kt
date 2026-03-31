@@ -1,47 +1,80 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdBoardAction
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdNodeField
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo.ErdUndoAction
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-internal const val BOARD_MIN_SCALE = 0.2f
-internal const val BOARD_MAX_SCALE = 5f
-internal const val MAX_UNDO = 50
-internal const val PASTE_OFFSET = 40f
+// ── Non-suspend helpers (fire-and-forget from outside an intent block) ─────────
 
 internal fun ErdBoardViewModel.requestNodeLock(nodeId: String) {
     viewModelScope.launch {
-        repository.requestLock(nodeId)
+        useCases.requestNodeLock(nodeId)
     }
 }
 
 internal fun ErdBoardViewModel.releaseNodeLock(nodeId: String) {
     viewModelScope.launch {
-        repository.releaseLock(nodeId)
+        useCases.releaseNodeLock(nodeId)
     }
 }
 
 internal fun ErdBoardViewModel.syncNodeMove(nodeId: String, position: Position) {
     viewModelScope.launch {
-        repository.sendAction(moveNodeAction(nodeId, position))
+        useCases.moveNode(nodeId, position)
     }
 }
 
 internal fun ErdBoardViewModel.syncNodeMoves(positions: Map<String, Position>) {
     if (positions.isEmpty()) return
     viewModelScope.launch {
-        repository.sendActions(positions.map { (nodeId, position) -> moveNodeAction(nodeId, position) })
+        useCases.moveNodes(positions)
     }
 }
+
+internal fun ErdBoardViewModel.sendNodeDragPreview(nodeId: String, position: Position) {
+    if (nodeId !in dragOrigins) return
+
+    val lastSentAt = runtimeState.lastDragPreviewSentAt
+    val sameNode = runtimeState.lastDragPreviewNodeId == nodeId
+    if (sameNode && lastSentAt != null && lastSentAt.elapsedNow() < 40.milliseconds) {
+        return
+    }
+
+    runtimeState = runtimeState.markDragPreviewSent(nodeId, TimeSource.Monotonic.markNow())
+    viewModelScope.launch {
+        useCases.sendNodeDragUpdate(nodeId, position)
+    }
+}
+
+internal fun ErdBoardViewModel.commitNodeMoveAndReleaseLock(nodeId: String, position: Position) {
+    viewModelScope.launch {
+        useCases.moveNode(nodeId, position)
+        useCases.releaseNodeLock(nodeId)
+    }
+}
+
+internal fun ErdBoardViewModel.commitNodeMovesAndReleaseLocks(positions: Map<String, Position>) {
+    if (positions.isEmpty()) return
+    viewModelScope.launch {
+        useCases.moveNodes(positions)
+        positions.keys.forEach { nodeId ->
+            useCases.releaseNodeLock(nodeId)
+        }
+    }
+}
+
+// ── Edge creation (runs inside an intent block) ───────────────────────────────
 
 internal fun ErdBoardViewModel.createEdge(
     sourceNodeId: String,
@@ -49,51 +82,46 @@ internal fun ErdBoardViewModel.createEdge(
     targetNodeId: String,
     targetFieldId: String?,
 ) = intent {
-    val edgeId = newBoardActionId()
-    val edge = RelationEdge(
-        id = edgeId,
-        sourceNodeId = sourceNodeId,
-        sourceFieldId = sourceFieldId,
-        targetNodeId = targetNodeId,
-        targetFieldId = targetFieldId,
-    )
-    runtimeState = runtimeState.pushUndo(ErdUndoAction.EdgeAdded(edgeId))
+    val edge = useCases.addEdge(sourceNodeId, sourceFieldId, targetNodeId, targetFieldId)
+    runtimeState = runtimeState.pushUndo(ErdUndoAction.EdgeAdded(edge.id))
     reduce {
         state.copy(
-            edges = state.edges + (edgeId to edge),
+            edges = state.edges + (edge.id to edge),
             connectingFromNodeId = null,
             connectingFromFieldId = null,
-            selectedEdgeId = edgeId,
+            selectedEdgeId = edge.id,
             canUndo = runtimeState.canUndo,
         )
     }
-    repository.sendAction(addEdgeAction(edge))
 }
 
+// ── Raw ErdBoardAction builders (used by undo flows via sendBoardActions) ──────
+
 internal fun buildAddActions(
-    nodes: List<EntityNode>,
-    edges: List<RelationEdge>,
+    nodes: List<ErdEntityNode>,
+    edges: List<ErdRelationEdge>,
 ): List<ErdBoardAction> = buildList(nodes.size + edges.size) {
-    nodes.forEach { node -> add(addNodeAction(node)) }
-    edges.forEach { edge -> add(addEdgeAction(edge)) }
+    nodes.forEach { node ->
+        add(ErdBoardAction.AddNode(node = node, actionId = newBoardActionId()))
+    }
+    edges.forEach { edge ->
+        add(ErdBoardAction.AddEdge(edge = edge, actionId = newBoardActionId()))
+    }
 }
 
 internal fun deleteNodeAction(nodeId: String): ErdBoardAction.DeleteNode =
     ErdBoardAction.DeleteNode(nodeId = nodeId, actionId = newBoardActionId())
 
-internal fun addNodeAction(node: EntityNode): ErdBoardAction.AddNode =
+internal fun addNodeAction(node: ErdEntityNode): ErdBoardAction.AddNode =
     ErdBoardAction.AddNode(node = node, actionId = newBoardActionId())
 
-internal fun addEdgeAction(edge: RelationEdge): ErdBoardAction.AddEdge =
+internal fun addEdgeAction(edge: ErdRelationEdge): ErdBoardAction.AddEdge =
     ErdBoardAction.AddEdge(edge = edge, actionId = newBoardActionId())
 
 internal fun deleteEdgeAction(edgeId: String): ErdBoardAction.DeleteEdge =
     ErdBoardAction.DeleteEdge(edgeId = edgeId, actionId = newBoardActionId())
 
-internal fun moveNodeAction(nodeId: String, position: Position): ErdBoardAction.MoveNode =
-    ErdBoardAction.MoveNode(nodeId = nodeId, newPosition = position, actionId = newBoardActionId())
-
-internal fun addFieldAction(nodeId: String, field: NodeField): ErdBoardAction.AddField =
+internal fun addFieldAction(nodeId: String, field: ErdNodeField): ErdBoardAction.AddField =
     ErdBoardAction.AddField(nodeId = nodeId, field = field, actionId = newBoardActionId())
 
 internal fun removeFieldAction(nodeId: String, fieldId: String): ErdBoardAction.RemoveField =
@@ -113,11 +141,13 @@ internal fun renameFieldAction(
         actionId = newBoardActionId(),
     )
 
+// ── State-merge helpers ────────────────────────────────────────────────────────
+
 internal fun mergeNodes(
-    local: Map<String, EntityNode>,
-    remote: Map<String, EntityNode>,
+    local: Map<String, ErdEntityNode>,
+    remote: Map<String, ErdEntityNode>,
     locallyMovedNodeIds: Set<String>,
-): Map<String, EntityNode> = remote.mapValues { (nodeId, remoteNode) ->
+): Map<String, ErdEntityNode> = remote.mapValues { (nodeId, remoteNode) ->
     val localNode = local[nodeId]
     if (localNode != null && nodeId in locallyMovedNodeIds) {
         remoteNode.copy(position = localNode.position)

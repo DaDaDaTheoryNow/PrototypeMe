@@ -15,16 +15,18 @@ import com.dadadadev.prototype_me.erd.board.ui.canvas.DragSourceAnchor
 import com.dadadadev.prototype_me.erd.board.ui.canvas.EdgeAnchors
 import com.dadadadev.prototype_me.erd.board.ui.canvas.EdgeSideOrientation
 import com.dadadadev.prototype_me.erd.board.ui.canvas.PortKey
+import com.dadadadev.prototype_me.erd.board.ui.canvas.calculateEdgeBezier
 import com.dadadadev.prototype_me.erd.board.ui.canvas.computeEdgeAnchors
 import com.dadadadev.prototype_me.erd.board.ui.canvas.findSourceDragPortAnchor
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
-import kotlin.math.abs
+import com.dadadadev.prototype_me.erd.board.config.ErdEdgeConfig
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 
 @Composable
 internal fun EdgesLayer(
-    edges: Map<String, RelationEdge>,
-    nodes: Map<String, EntityNode>,
+    edges: Map<String, ErdRelationEdge>,
+    nodes: Map<String, ErdEntityNode>,
     scale: Float,
     panOffset: Offset,
     density: Float,
@@ -59,10 +61,10 @@ internal fun EdgesLayer(
                 density = density,
                 sideOrientation = edgeSideOrientations[edge.id],
             ) ?: return@forEach
-            val spread = (edgePortIndex[edge.id] ?: 0) * 5f
+            val spread = (edgePortIndex[edge.id] ?: 0) * ErdEdgeConfig.MULTI_EDGE_SPREAD_PX
             val isSelected = edge.id == selectedEdgeId
-            val edgeColor = if (isSelected) Color(0xFF111111) else Color(0xFF888888)
-            val strokeWidth = if (isSelected) 2.5f else 1.5f
+            val edgeColor = if (isSelected) ErdBoardColors.edgeSelected else ErdBoardColors.edgeDefault
+            val strokeWidth = if (isSelected) ErdEdgeConfig.STROKE_SELECTED else ErdEdgeConfig.STROKE_DEFAULT
 
             drawEdgeBezier(
                 anchors = anchors,
@@ -75,7 +77,7 @@ internal fun EdgesLayer(
                 val src = anchors.src
                 val tgt = anchors.tgt.copy(y = anchors.tgt.y + spread)
                 val mid = Offset((src.x + tgt.x) / 2f, (src.y + tgt.y) / 2f)
-                drawCircle(Color(0xFF111111), 5f, mid)
+                drawCircle(ErdBoardColors.edgeSelected, ErdEdgeConfig.HANDLE_DOT_RADIUS, mid)
             }
         }
 
@@ -122,18 +124,14 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawEdgeBezier(
     color: Color,
     strokeWidth: Float,
 ) {
-    val src = anchors.src
-    val tgt = anchors.tgt.copy(y = anchors.tgt.y + spreadY)
-    val dx = abs(tgt.x - src.x).coerceAtLeast(40f)
-    val ctrl = (dx * 0.45f).coerceIn(40f, 250f)
-    val srcDir = if (anchors.srcIsRight) 1f else -1f
-    val tgtDir = if (anchors.tgtIsRight) 1f else -1f
-    val c1 = Offset(src.x + srcDir * ctrl, src.y)
-    val c2 = Offset(tgt.x + tgtDir * ctrl, tgt.y)
-    val path = Path().apply { moveTo(src.x, src.y); cubicTo(c1.x, c1.y, c2.x, c2.y, tgt.x, tgt.y) }
+    val curve = calculateEdgeBezier(anchors, spreadY)
+    val path = Path().apply {
+        moveTo(curve.src.x, curve.src.y)
+        cubicTo(curve.c1.x, curve.c1.y, curve.c2.x, curve.c2.y, curve.tgt.x, curve.tgt.y)
+    }
     drawPath(path, color, style = Stroke(strokeWidth, join = StrokeJoin.Round))
-    drawCircle(color, 3f, src)
-    drawCircle(color, 3f, tgt)
+    drawCircle(color, ErdEdgeConfig.ENDPOINT_DOT_RADIUS, curve.src)
+    drawCircle(color, ErdEdgeConfig.ENDPOINT_DOT_RADIUS, curve.tgt)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRubberBandSnapped(
@@ -141,17 +139,19 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRubberBandSnapp
     tgt: Offset,
     tgtIsRight: Boolean,
 ) {
-    val src = sourceAnchor.position
-    val dx = abs(tgt.x - src.x).coerceAtLeast(40f)
-    val ctrl = (dx * 0.45f).coerceIn(40f, 250f)
-    val srcDir = if (sourceAnchor.isRight) 1f else -1f
-    val tgtDir = if (tgtIsRight) 1f else -1f
-    val c1 = Offset(src.x + srcDir * ctrl, src.y)
-    val c2 = Offset(tgt.x + tgtDir * ctrl, tgt.y)
-    val path = Path().apply { moveTo(src.x, src.y); cubicTo(c1.x, c1.y, c2.x, c2.y, tgt.x, tgt.y) }
-    drawPath(path, Color(0xFF888888), style = Stroke(1.5f, join = StrokeJoin.Round))
-    drawCircle(Color(0xFF888888), 3f, src)
-    drawCircle(Color(0xFF888888), 3f, tgt)
+    val curve = calculateEdgeBezier(
+        src = sourceAnchor.position,
+        tgt = tgt,
+        srcIsRight = sourceAnchor.isRight,
+        tgtIsRight = tgtIsRight,
+    )
+    val path = Path().apply {
+        moveTo(curve.src.x, curve.src.y)
+        cubicTo(curve.c1.x, curve.c1.y, curve.c2.x, curve.c2.y, curve.tgt.x, curve.tgt.y)
+    }
+    drawPath(path, ErdBoardColors.edgeDefault, style = Stroke(ErdEdgeConfig.STROKE_DEFAULT, join = StrokeJoin.Round))
+    drawCircle(ErdBoardColors.edgeDefault, ErdEdgeConfig.ENDPOINT_DOT_RADIUS, curve.src)
+    drawCircle(ErdBoardColors.edgeDefault, ErdEdgeConfig.ENDPOINT_DOT_RADIUS, curve.tgt)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRubberBandFree(
@@ -159,13 +159,13 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRubberBandFree(
     dragTo: Offset,
 ) {
     drawLine(
-        Color(0xFF888888), src, dragTo,
-        strokeWidth = 2f,
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 5f)),
+        ErdBoardColors.edgeDefault, src, dragTo,
+        strokeWidth = ErdEdgeConfig.STROKE_RUBBER_BAND,
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(ErdEdgeConfig.DASH_ON, ErdEdgeConfig.DASH_OFF)),
         cap = StrokeCap.Round,
     )
-    drawCircle(Color(0xFF555555), 5f, dragTo)
-    drawCircle(Color(0xFF555555), 5f, src)
+    drawCircle(ErdBoardColors.edgeDragHandle, ErdEdgeConfig.HANDLE_DOT_RADIUS, dragTo)
+    drawCircle(ErdBoardColors.edgeDragHandle, ErdEdgeConfig.HANDLE_DOT_RADIUS, src)
 }
 
 

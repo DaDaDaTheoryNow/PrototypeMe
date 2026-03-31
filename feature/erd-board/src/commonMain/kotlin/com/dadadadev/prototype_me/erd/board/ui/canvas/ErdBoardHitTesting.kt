@@ -1,18 +1,13 @@
 package com.dadadadev.prototype_me.erd.board.ui.canvas
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
-import kotlin.math.abs
-
-internal const val EDGE_HIT_SEGMENTS = 18
-internal const val EDGE_SNAP_IN_MULTIPLIER = 0.95f
-internal const val EDGE_SNAP_OUT_MULTIPLIER = 1.20f
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
+import com.dadadadev.prototype_me.erd.board.config.ErdEdgeConfig
 
 internal fun buildEdgeHitPolylines(
-    edges: List<RelationEdge>,
-    nodes: Map<String, EntityNode>,
+    edges: List<ErdRelationEdge>,
+    nodes: Map<String, ErdEntityNode>,
     scale: Float,
     panOffset: Offset,
     density: Float,
@@ -38,17 +33,10 @@ internal fun buildEdgeHitPolylines(
             sideOrientation = edgeSideOrientations[edge.id],
         ) ?: return@mapNotNull null
 
-        val spread = (edgePortIndex[edge.id] ?: 0) * 5f
-        val source = anchors.src
-        val target = anchors.tgt.copy(y = anchors.tgt.y + spread)
-        val dx = abs(target.x - source.x).coerceAtLeast(40f)
-        val control = (dx * 0.45f).coerceIn(40f, 250f)
-        val sourceDirection = if (anchors.srcIsRight) 1f else -1f
-        val targetDirection = if (anchors.tgtIsRight) 1f else -1f
-        val c1 = Offset(source.x + sourceDirection * control, source.y)
-        val c2 = Offset(target.x + targetDirection * control, target.y)
+        val spread = (edgePortIndex[edge.id] ?: 0) * ErdEdgeConfig.MULTI_EDGE_SPREAD_PX
+        val curve = calculateEdgeBezier(anchors, spread)
 
-        edge.id to sampleCubicBezierPoints(source, c1, c2, target, EDGE_HIT_SEGMENTS)
+        edge.id to sampleCubicBezierPoints(curve.src, curve.c1, curve.c2, curve.tgt, ErdEdgeConfig.HIT_TEST_SEGMENTS)
     }.toMap()
 }
 

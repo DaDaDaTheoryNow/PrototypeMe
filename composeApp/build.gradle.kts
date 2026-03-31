@@ -1,4 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -17,7 +20,11 @@ kotlin {
         }
     }
 
-    jvm()
+    jvm {
+        mainRun {
+            mainClass = "com.dadadadev.prototype_me.MainKt"
+        }
+    }
 
     js {
         browser {
@@ -54,8 +61,12 @@ kotlin {
             
             // Feature modules
             implementation(project(":feature:erd-board"))
+            implementation(project(":feature:home"))
             implementation(project(":domains:erd-design:api:data"))
+            implementation(project(":domains:erd-design:impl:domain"))
             implementation(project(":domains:erd-design:impl:data"))
+            implementation(project(":domains:auth:impl"))
+            implementation(project(":core:common"))
             implementation(projects.core.mvi)
             implementation(projects.core.ui)
         }
@@ -113,6 +124,3 @@ compose.desktop {
         }
     }
 }
-
-
-

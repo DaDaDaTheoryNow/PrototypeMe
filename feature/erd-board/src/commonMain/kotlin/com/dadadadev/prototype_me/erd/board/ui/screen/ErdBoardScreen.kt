@@ -14,22 +14,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardSession
+import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardSideEffect
-import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.ui.canvas.ErdBoardCanvasContent
-import com.dadadadev.prototype_me.erd.board.ui.screen.handleBoardEscape
-import com.dadadadev.prototype_me.erd.board.ui.screen.resolveDeleteSelection
-import com.dadadadev.prototype_me.erd.board.ui.screen.rememberErdBoardIntentHandler
 import com.dadadadev.prototype_me.erd.board.ui.canvas.rememberErdBoardRenderData
-import com.dadadadev.prototype_me.erd.board.ui.screen.resolveCopySelection
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 import com.dadadadev.prototype_me.feature.board.core.ui.input.boardKeyboardShortcuts
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
+fun ErdBoardScreen(
+    boardId: String,
+    userId: String,
+    onNavigateBack: (() -> Unit)? = null,
+    viewModel: ErdBoardViewModel = koinViewModel(
+        key = boardId,
+        parameters = { parametersOf(ErdBoardSession(boardId = boardId, currentUserId = userId)) },
+    ),
+) {
     val state by viewModel.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val density = LocalDensity.current.density
@@ -40,6 +47,7 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
     var multiSelectMenuPos by remember { mutableStateOf<Offset?>(null) }
     var showAddNodeDialog by remember { mutableStateOf(false) }
     var showJsonDialog by remember { mutableStateOf(false) }
+    var showShareDialog by remember { mutableStateOf(false) }
     var hasAppliedInitialViewportFit by remember { mutableStateOf(false) }
     val currentBoardJson = remember(showJsonDialog, state.nodes, state.edges) {
         if (!showJsonDialog) {
@@ -65,8 +73,9 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
 
     viewModel.collectSideEffect { effect ->
         when (effect) {
-            is ErdBoardSideEffect.ShowLockError -> snackbarHostState.showSnackbar("Locked by ${effect.lockedBy}")
-            ErdBoardSideEffect.ShowConnectionLost -> snackbarHostState.showSnackbar("Connection lost - reconnecting...")
+            is ErdBoardSideEffect.ShowLockError -> snackbarHostState.showSnackbar(ErdBoardStrings.lockedByMessage(effect.lockedBy))
+            is ErdBoardSideEffect.ShowConnectionError -> snackbarHostState.showSnackbar(effect.message)
+            ErdBoardSideEffect.ShowConnectionLost -> snackbarHostState.showSnackbar(ErdBoardStrings.CONNECTION_LOST)
             is ErdBoardSideEffect.SelectPastedNodes -> {
                 marqueeSelectedNodeIds = effect.nodeIds
                 multiSelectMenuPos = null
@@ -94,8 +103,8 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
         modifier = Modifier
             .fillMaxSize()
             .boardKeyboardShortcuts(
-                isActive = !showAddNodeDialog && !showJsonDialog && state.selectedNodeId == null,
-                focusRestoreKey = Triple(showAddNodeDialog, showJsonDialog, state.selectedNodeId),
+                isActive = !showAddNodeDialog && !showJsonDialog && !showShareDialog && state.selectedNodeId == null,
+                focusRestoreKey = listOf(showAddNodeDialog, showJsonDialog, showShareDialog, state.selectedNodeId),
                 onEscape = handleEscape,
                 onUndo = { viewModel.onIntent(ErdBoardIntent.OnUndo) },
                 onCopy = {
@@ -128,6 +137,9 @@ fun ErdBoardScreen(viewModel: ErdBoardViewModel = koinViewModel()) {
             onShowAddNodeDialogChange = { showAddNodeDialog = it },
             showJsonDialog = showJsonDialog,
             onShowJsonDialogChange = { showJsonDialog = it },
+            showShareDialog = showShareDialog,
+            onShowShareDialogChange = { showShareDialog = it },
+            boardId = boardId,
             currentBoardJson = currentBoardJson,
             onImportBoardJson = { jsonText ->
                 val importedBoard = viewModel.importBoardJson(jsonText).getOrNull()

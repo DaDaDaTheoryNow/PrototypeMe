@@ -23,6 +23,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.feature.boardCore)
             implementation(projects.domains.erdDesign.api.data)
+            implementation(projects.domains.erdDesign.impl.domain)
             implementation(projects.core.mvi)
             implementation(projects.core.ui)
 

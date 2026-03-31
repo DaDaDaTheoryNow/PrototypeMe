@@ -8,24 +8,24 @@ fun interface BoardJsonSnapshotValidator<TNode : BoardEntity, TEdge : BoardEdge>
     fun validate(snapshot: BoardSnapshot<TNode, TEdge>)
 }
 
-open class BoardJsonException(message: String) : IllegalArgumentException(message)
+internal open class BoardJsonException(message: String) : IllegalArgumentException(message)
 
-class BoardJsonFormatMismatchException(actual: String) :
+internal class BoardJsonFormatMismatchException(actual: String) :
     BoardJsonException("Unsupported board JSON format: $actual")
 
-class BoardJsonVersionMismatchException(actual: Int) :
+internal class BoardJsonVersionMismatchException(actual: Int) :
     BoardJsonException("Unsupported board JSON version: $actual")
 
-class BoardJsonTypeMismatchException(
+internal class BoardJsonTypeMismatchException(
     expected: String,
     actual: String,
 ) : BoardJsonException("Expected boardType=$expected but got $actual")
 
-class BoardJsonDuplicateNodeIdException(ids: Set<String>) :
+internal class BoardJsonDuplicateNodeIdException(ids: Set<String>) :
     BoardJsonException("Duplicate node ids in JSON: ${ids.joinToString()}")
 
-class BoardJsonDuplicateEdgeIdException(ids: Set<String>) :
+internal class BoardJsonDuplicateEdgeIdException(ids: Set<String>) :
     BoardJsonException("Duplicate edge ids in JSON: ${ids.joinToString()}")
 
-class BoardJsonBrokenEdgeReferenceException(edgeIds: List<String>) :
+internal class BoardJsonBrokenEdgeReferenceException(edgeIds: List<String>) :
     BoardJsonException("Edges reference unknown nodes: ${edgeIds.joinToString()}")

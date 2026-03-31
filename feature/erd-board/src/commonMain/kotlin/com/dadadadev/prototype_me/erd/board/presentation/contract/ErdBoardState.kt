@@ -1,8 +1,7 @@
 package com.dadadadev.prototype_me.erd.board.presentation.contract
 
-import androidx.compose.ui.geometry.Offset
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 
 /**
  * Public UI contract for the ERD board screen.
@@ -12,18 +11,19 @@ import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEd
  * tracking live inside the ViewModel runtime state.
  */
 data class ErdBoardState(
-    val nodes: Map<String, EntityNode> = emptyMap(),
-    val edges: Map<String, RelationEdge> = emptyMap(),
-    val panOffset: Offset = Offset.Zero,
+    val nodes: Map<String, ErdEntityNode> = emptyMap(),
+    val edges: Map<String, ErdRelationEdge> = emptyMap(),
+    val panOffset: ErdBoardVector = ErdBoardVector.Zero,
     val scale: Float = 1f,
     val connectingFromNodeId: String? = null,
     val connectingFromFieldId: String? = null,
     val draggingEdgeFromNodeId: String? = null,
     val draggingEdgeFromFieldId: String? = null,
-    val draggingEdgeCurrentPos: Offset? = null,
+    val draggingEdgeCurrentPos: ErdBoardVector? = null,
     val draggingEdgeSnapTargetNodeId: String? = null,
     val draggingEdgeSnapTargetFieldId: String? = null,
     val draggingEdgeSnapTargetIsRight: Boolean? = null,
+    val draggingNodeIds: Set<String> = emptySet(),
     val selectedEdgeId: String? = null,
     val nodeMenuNodeId: String? = null,
     val selectedNodeId: String? = null,

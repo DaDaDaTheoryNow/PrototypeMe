@@ -2,11 +2,11 @@ package com.dadadadev.prototype_me.domains.board.core.impl.data.json
 
 import kotlinx.serialization.Serializable
 
-const val BOARD_JSON_FORMAT = "prototype_me.board"
-const val BOARD_JSON_VERSION = 1
+internal const val BOARD_JSON_FORMAT = "prototype_me.board"
+internal const val BOARD_JSON_VERSION = 1
 
 @Serializable
-data class BoardJsonDocument<TNodePayload, TEdgePayload>(
+internal data class BoardJsonDocument<TNodePayload, TEdgePayload>(
     val format: String = BOARD_JSON_FORMAT,
     val version: Int = BOARD_JSON_VERSION,
     val boardType: String,
@@ -15,14 +15,14 @@ data class BoardJsonDocument<TNodePayload, TEdgePayload>(
 )
 
 @Serializable
-data class BoardJsonNode<TPayload>(
+internal data class BoardJsonNode<TPayload>(
     val id: String,
     val position: BoardJsonPoint,
     val payload: TPayload,
 )
 
 @Serializable
-data class BoardJsonEdge<TPayload>(
+internal data class BoardJsonEdge<TPayload>(
     val id: String,
     val sourceId: String,
     val targetId: String,
@@ -30,7 +30,7 @@ data class BoardJsonEdge<TPayload>(
 )
 
 @Serializable
-data class BoardJsonPoint(
+internal data class BoardJsonPoint(
     val x: Float,
     val y: Float,
 )

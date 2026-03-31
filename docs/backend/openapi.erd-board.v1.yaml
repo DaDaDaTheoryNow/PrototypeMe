@@ -1,0 +1,773 @@
+openapi: 3.1.0
+info:
+  title: PrototypeMe ERD Board Backend API
+  version: 1.0.0
+  description: |
+    API contract for ERD board creation, sharing, join flow, snapshot sync, actions, locks,
+    and import/export compatible with current app models.
+servers:
+  - url: http://localhost:8080
+    description: Local backend
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Boards
+  - name: Invites
+  - name: Realtime
+  - name: Actions
+  - name: Locks
+  - name: ImportExport
+
+paths:
+  /v1/boards:
+    post:
+      tags: [Boards]
+      summary: Create board
+      description: |
+        Creates a board and returns approval, generated boardId, web URL and deep link.
+      operationId: createBoard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoardRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBoardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/boards/{boardId}:
+    get:
+      tags: [Boards]
+      summary: Get board context snapshot
+      operationId: getBoard
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      responses:
+        '200':
+          description: Board state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBoardResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/boards/{boardId}/join:
+    post:
+      tags: [Boards]
+      summary: Join board session
+      description: |
+        Issues a short-lived session token for websocket realtime connection.
+      operationId: joinBoard
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinBoardRequest'
+      responses:
+        '200':
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinBoardResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/invites/{inviteToken}/resolve:
+    get:
+      tags: [Invites]
+      summary: Resolve invite
+      operationId: resolveInvite
+      parameters:
+        - name: inviteToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invite resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveInviteResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/realtime:
+    get:
+      tags: [Realtime]
+      summary: Realtime websocket handshake endpoint
+      description: |
+        Upgrade to WebSocket using query params:
+        - boardId
+        - sessionToken
+
+        On success server upgrades with HTTP 101.
+      operationId: openRealtimeSocket
+      parameters:
+        - $ref: '#/components/parameters/BoardIdQuery'
+        - name: sessionToken
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/boards/{boardId}/actions:
+    post:
+      tags: [Actions]
+      summary: Submit board action (HTTP fallback)
+      description: |
+        Optional HTTP fallback for environments where websocket is unavailable.
+        Server should apply action with the same rules as realtime pipeline.
+      operationId: submitAction
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitActionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitActionResponse'
+        '409':
+          description: Rejected (conflict/validation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionRejectedResponse'
+
+  /v1/boards/{boardId}/locks/request:
+    post:
+      tags: [Locks]
+      summary: Request node lock
+      operationId: requestLock
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nodeId]
+              properties:
+                nodeId:
+                  type: string
+      responses:
+        '200':
+          description: Lock granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockGrantedResponse'
+        '409':
+          description: Lock rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockRejectedResponse'
+
+  /v1/boards/{boardId}/locks/release:
+    post:
+      tags: [Locks]
+      summary: Release node lock
+      operationId: releaseLock
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nodeId]
+              properties:
+                nodeId:
+                  type: string
+      responses:
+        '200':
+          description: Lock released
+
+  /v1/boards/{boardId}/export:
+    get:
+      tags: [ImportExport]
+      summary: Export board JSON in app-compatible format
+      operationId: exportBoardJson
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      responses:
+        '200':
+          description: Board export document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErdBoardExportDocument'
+
+  /v1/boards/{boardId}/import:
+    post:
+      tags: [ImportExport]
+      summary: Import board JSON in app-compatible format
+      operationId: importBoardJson
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErdBoardExportDocument'
+      responses:
+        '202':
+          description: Import accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted]
+                properties:
+                  accepted:
+                    type: boolean
+                    enum: [true]
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    BoardId:
+      name: boardId
+      in: path
+      required: true
+      schema:
+        type: string
+    BoardIdQuery:
+      name: boardId
+      in: query
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    CreateBoardRequest:
+      type: object
+      required: [displayName]
+      properties:
+        title:
+          type: string
+          default: Untitled board
+        displayName:
+          type: string
+          description: Name shown in presence and lock messages.
+
+    CreateBoardResponse:
+      type: object
+      required: [approved, boardId, inviteToken, webUrl, deepLink, createdAt]
+      properties:
+        approved:
+          type: boolean
+          enum: [true]
+        boardId:
+          type: string
+        inviteToken:
+          type: string
+        webUrl:
+          type: string
+          format: uri
+          example: http://localhost:3000/board/brd_01JABCDEF
+        deepLink:
+          type: string
+          example: prototypeme://board/brd_01JABCDEF
+        createdAt:
+          type: string
+          format: date-time
+
+    JoinBoardRequest:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+        inviteToken:
+          type: string
+          description: Optional if user already has access.
+
+    JoinBoardResponse:
+      type: object
+      required: [boardId, userId, displayName, role, sessionToken, expiresAt]
+      properties:
+        boardId:
+          type: string
+        userId:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [owner, editor, viewer]
+        sessionToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    ResolveInviteResponse:
+      type: object
+      required: [boardId, webUrl, deepLink, canJoin]
+      properties:
+        boardId:
+          type: string
+        webUrl:
+          type: string
+          format: uri
+        deepLink:
+          type: string
+        canJoin:
+          type: boolean
+
+    GetBoardResponse:
+      type: object
+      required: [boardId, version, context]
+      properties:
+        boardId:
+          type: string
+        version:
+          type: integer
+          minimum: 0
+        context:
+          $ref: '#/components/schemas/ErdBoardContext'
+
+    SubmitActionRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          $ref: '#/components/schemas/ErdBoardAction'
+
+    SubmitActionResponse:
+      type: object
+      required: [accepted, actionId]
+      properties:
+        accepted:
+          type: boolean
+          enum: [true]
+        actionId:
+          type: string
+        serverVersion:
+          type: integer
+          minimum: 0
+
+    ActionRejectedResponse:
+      type: object
+      required: [accepted, actionId, reason]
+      properties:
+        accepted:
+          type: boolean
+          enum: [false]
+        actionId:
+          type: string
+        reason:
+          type: string
+        lockedBy:
+          type: string
+
+    LockGrantedResponse:
+      type: object
+      required: [granted, nodeId, lockedBy]
+      properties:
+        granted:
+          type: boolean
+          enum: [true]
+        nodeId:
+          type: string
+        lockedBy:
+          type: string
+
+    LockRejectedResponse:
+      type: object
+      required: [granted, nodeId, lockedBy]
+      properties:
+        granted:
+          type: boolean
+          enum: [false]
+        nodeId:
+          type: string
+        lockedBy:
+          type: string
+
+    BoardPoint:
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          type: number
+          format: float
+        y:
+          type: number
+          format: float
+
+    BoardSize:
+      type: object
+      required: [width, height]
+      properties:
+        width:
+          type: number
+          format: float
+        height:
+          type: number
+          format: float
+
+    FieldType:
+      type: string
+      enum: [TEXT, NUMBER, BOOLEAN, DATE]
+
+    ErdNodeField:
+      type: object
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/FieldType'
+
+    ErdEntityNode:
+      type: object
+      required: [id, name, position, size, fields]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          $ref: '#/components/schemas/BoardPoint'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErdNodeField'
+        size:
+          $ref: '#/components/schemas/BoardSize'
+        lockedBy:
+          type: string
+          nullable: true
+
+    ErdRelationEdge:
+      type: object
+      required: [id, sourceNodeId, targetNodeId]
+      properties:
+        id:
+          type: string
+        sourceNodeId:
+          type: string
+        sourceFieldId:
+          type: string
+          nullable: true
+        targetNodeId:
+          type: string
+        targetFieldId:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+
+    ErdBoardSnapshot:
+      type: object
+      required: [entities, edges]
+      properties:
+        entities:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ErdEntityNode'
+        edges:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ErdRelationEdge'
+
+    ErdBoardContext:
+      type: object
+      required: [boardId, nodes, edges]
+      properties:
+        boardId:
+          type: string
+        nodes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ErdEntityNode'
+        edges:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ErdRelationEdge'
+
+    ErdBoardAction:
+      oneOf:
+        - $ref: '#/components/schemas/MoveNodeAction'
+        - $ref: '#/components/schemas/AddNodeAction'
+        - $ref: '#/components/schemas/DeleteNodeAction'
+        - $ref: '#/components/schemas/AddEdgeAction'
+        - $ref: '#/components/schemas/DeleteEdgeAction'
+        - $ref: '#/components/schemas/AddFieldAction'
+        - $ref: '#/components/schemas/RemoveFieldAction'
+        - $ref: '#/components/schemas/RenameFieldAction'
+      discriminator:
+        propertyName: type
+
+    MoveNodeAction:
+      type: object
+      required: [type, actionId, nodeId, newPosition]
+      properties:
+        type:
+          type: string
+          enum: [MoveNode]
+        actionId:
+          type: string
+        nodeId:
+          type: string
+        newPosition:
+          $ref: '#/components/schemas/BoardPoint'
+
+    AddNodeAction:
+      type: object
+      required: [type, actionId, node]
+      properties:
+        type:
+          type: string
+          enum: [AddNode]
+        actionId:
+          type: string
+        node:
+          $ref: '#/components/schemas/ErdEntityNode'
+
+    DeleteNodeAction:
+      type: object
+      required: [type, actionId, nodeId]
+      properties:
+        type:
+          type: string
+          enum: [DeleteNode]
+        actionId:
+          type: string
+        nodeId:
+          type: string
+
+    AddEdgeAction:
+      type: object
+      required: [type, actionId, edge]
+      properties:
+        type:
+          type: string
+          enum: [AddEdge]
+        actionId:
+          type: string
+        edge:
+          $ref: '#/components/schemas/ErdRelationEdge'
+
+    DeleteEdgeAction:
+      type: object
+      required: [type, actionId, edgeId]
+      properties:
+        type:
+          type: string
+          enum: [DeleteEdge]
+        actionId:
+          type: string
+        edgeId:
+          type: string
+
+    AddFieldAction:
+      type: object
+      required: [type, actionId, nodeId, field]
+      properties:
+        type:
+          type: string
+          enum: [AddField]
+        actionId:
+          type: string
+        nodeId:
+          type: string
+        field:
+          $ref: '#/components/schemas/ErdNodeField'
+
+    RemoveFieldAction:
+      type: object
+      required: [type, actionId, nodeId, fieldId]
+      properties:
+        type:
+          type: string
+          enum: [RemoveField]
+        actionId:
+          type: string
+        nodeId:
+          type: string
+        fieldId:
+          type: string
+
+    RenameFieldAction:
+      type: object
+      required: [type, actionId, nodeId, fieldId, newName, newType]
+      properties:
+        type:
+          type: string
+          enum: [RenameField]
+        actionId:
+          type: string
+        nodeId:
+          type: string
+        fieldId:
+          type: string
+        newName:
+          type: string
+        newType:
+          $ref: '#/components/schemas/FieldType'
+
+    ErdExportFieldPayload:
+      type: object
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/FieldType'
+
+    ErdExportNodePayload:
+      type: object
+      required: [name, fields]
+      properties:
+        name:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErdExportFieldPayload'
+
+    ErdExportEdgePayload:
+      type: object
+      properties:
+        sourceFieldId:
+          type: string
+          nullable: true
+        targetFieldId:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+
+    ErdExportNodeItem:
+      type: object
+      required: [id, position, payload]
+      properties:
+        id:
+          type: string
+        position:
+          $ref: '#/components/schemas/BoardPoint'
+        payload:
+          $ref: '#/components/schemas/ErdExportNodePayload'
+
+    ErdExportEdgeItem:
+      type: object
+      required: [id, sourceId, targetId, payload]
+      properties:
+        id:
+          type: string
+        sourceId:
+          type: string
+        targetId:
+          type: string
+        payload:
+          $ref: '#/components/schemas/ErdExportEdgePayload'
+
+    ErdBoardExportDocument:
+      type: object
+      required: [format, version, boardType, nodes, edges]
+      properties:
+        format:
+          type: string
+          enum: [prototype_me.board]
+        version:
+          type: integer
+          enum: [1]
+        boardType:
+          type: string
+          enum: [erd]
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErdExportNodeItem'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErdExportEdgeItem'

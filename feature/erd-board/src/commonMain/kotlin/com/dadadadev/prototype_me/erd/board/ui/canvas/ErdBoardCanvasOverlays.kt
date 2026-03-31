@@ -15,9 +15,12 @@ import com.dadadadev.prototype_me.erd.board.ui.components.ConnectingHintBanner
 import com.dadadadev.prototype_me.erd.board.ui.components.EdgeSelectionToolbar
 import com.dadadadev.prototype_me.erd.board.ui.components.MultiSelectMenu
 import com.dadadadev.prototype_me.erd.board.ui.components.NodeActionMenu
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.AddEntityDialog
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.BoardJsonDialog
+import com.dadadadev.prototype_me.erd.board.ui.dialogs.BoardShareDialog
 import com.dadadadev.prototype_me.erd.board.ui.dialogs.NodeDetailDialog
+import com.dadadadev.prototype_me.erd.board.ui.mappers.toOffset
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.screenToBoardOffset
 
 @Composable
@@ -32,6 +35,9 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
     onShowAddNodeDialogChange: (Boolean) -> Unit,
     showJsonDialog: Boolean,
     onShowJsonDialogChange: (Boolean) -> Unit,
+    showShareDialog: Boolean,
+    onShowShareDialogChange: (Boolean) -> Unit,
+    boardId: String,
     currentBoardJson: String?,
     onImportBoardJson: (String) -> Unit,
     multiSelectMenuPos: Offset?,
@@ -42,10 +48,10 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
     ConnectingHintBanner(
         connectingFromNodeId = state.connectingFromNodeId,
         connectingFromFieldId = state.connectingFromFieldId,
-        nodes = state.nodes,
+        nodes = renderData.renderedNodes,
         modifier = Modifier
             .align(Alignment.TopCenter)
-            .padding(top = 16.dp),
+            .padding(top = ErdBoardDimens.OVERLAY_CONNECT_HINT_TOP_DP.dp),
     )
 
     state.edges[state.selectedEdgeId]?.let { selectedEdge ->
@@ -54,16 +60,16 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
             midpoint = renderData.edgeMidpoints[selectedEdge.id],
             screenW = screenWidth,
             screenH = screenHeight,
-            nodes = state.nodes,
+            nodes = renderData.renderedNodes,
             onDeleteEdge = { onIntent(ErdBoardIntent.OnDeleteEdge(selectedEdge.id)) },
         )
     }
 
-    state.nodes[state.nodeMenuNodeId]?.let { menuNode ->
+    renderData.renderedNodes[state.nodeMenuNodeId]?.let { menuNode ->
         NodeActionMenu(
             node = menuNode,
             scale = state.scale,
-            panOffset = state.panOffset,
+            panOffset = state.panOffset.toOffset(),
             density = density,
             onEditFields = { onIntent(ErdBoardIntent.OnSelectNode(menuNode.id)) },
             onDelete = { onIntent(ErdBoardIntent.OnDeleteNode(menuNode.id)) },
@@ -92,10 +98,11 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
     AddEntityToolbar(
         modifier = Modifier
             .align(Alignment.BottomCenter)
-            .padding(bottom = 24.dp),
+            .padding(bottom = ErdBoardDimens.OVERLAY_ADD_TOOLBAR_BOTTOM_DP.dp),
         canUndo = state.canUndo,
         onUndo = { onIntent(ErdBoardIntent.OnUndo) },
         onShowJson = { onShowJsonDialogChange(true) },
+        onShare = { onShowShareDialogChange(true) },
         onAddEntity = { onShowAddNodeDialogChange(true) },
     )
 
@@ -106,7 +113,7 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
                 val boardCenter = screenToBoardOffset(
                     point = Offset(screenWidth / 2f, screenHeight / 2f),
                     scale = state.scale,
-                    panOffset = state.panOffset,
+                    panOffset = state.panOffset.toOffset(),
                     density = density,
                 )
                 onIntent(
@@ -141,6 +148,13 @@ internal fun BoxScope.ErdBoardCanvasOverlays(
             currentJson = checkNotNull(currentBoardJson),
             onImport = onImportBoardJson,
             onDismiss = { onShowJsonDialogChange(false) },
+        )
+    }
+
+    if (showShareDialog) {
+        BoardShareDialog(
+            boardId = boardId,
+            onDismiss = { onShowShareDialogChange(false) },
         )
     }
 }

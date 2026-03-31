@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -17,19 +19,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.offset
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
-import com.dadadadev.prototype_me.erd.board.ui.canvas.EDGE_SNAP_IN_MULTIPLIER
-import com.dadadadev.prototype_me.erd.board.ui.canvas.EDGE_SNAP_OUT_MULTIPLIER
-import com.dadadadev.prototype_me.erd.board.ui.node.EntityCard
+import com.dadadadev.prototype_me.erd.board.ui.canvas.findTopNodeAt
+import com.dadadadev.prototype_me.erd.board.ui.canvas.isPointerOnPort
 import com.dadadadev.prototype_me.erd.board.ui.canvas.PortKey
 import com.dadadadev.prototype_me.erd.board.ui.canvas.findNearestTargetPort
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.erd.board.config.ErdEdgeConfig
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.node.EntityCard
+import com.dadadadev.prototype_me.erd.board.ui.mappers.toBoardVector
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.feature.board.core.ui.viewport.screenDeltaToBoardDelta
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
 @Composable
 internal fun NodesLayer(
-    nodes: Map<String, EntityNode>,
+    nodes: Map<String, ErdEntityNode>,
     scale: Float,
     panOffset: Offset,
     density: Float,
@@ -46,141 +53,227 @@ internal fun NodesLayer(
     portHitPx: Float,
     onIntent: (ErdBoardIntent) -> Unit,
 ) {
+    val latestNodes by rememberUpdatedState(nodes)
+    val latestOnIntent by rememberUpdatedState(onIntent)
     val latestPortPositions by rememberUpdatedState(portPositions)
+    val latestScale by rememberUpdatedState(scale)
+    val latestPanOffset by rememberUpdatedState(panOffset)
+    val latestDensity by rememberUpdatedState(density)
+    val portTargetRadiusPx = ErdBoardDimens.PORT_HIT_TARGET_DP * density
 
-    // Entity cards
-    nodes.values.forEach { node ->
-        key(node.id) {
-            EntityCard(
-                node = node,
-                scale = scale,
-                panOffset = panOffset,
-                density = density,
-                isSourceNode = node.id == connectingFromNodeId ||
-                        node.id == draggingEdgeFromNodeId ||
-                        node.id == nodeMenuNodeId,
-                isSelected = node.id in selectedNodeIds,
-                highlightedFieldIds = highlightedFieldIds,
-                onDragStart = { onIntent(ErdBoardIntent.OnDragStart(node.id)) },
-                onDrag = { delta -> onIntent(ErdBoardIntent.OnDragNode(node.id, delta)) },
-                onDragEnd = { onIntent(ErdBoardIntent.OnDragEnd(node.id)) },
-                onTap = { onIntent(ErdBoardIntent.OnNodeMenu(node.id)) },
-                onLongPress = { onIntent(ErdBoardIntent.OnSelectNode(node.id)) },
-            )
-        }
-    }
-
-    // Port dots (field-level, left + right of each field row)
-    portPositions.forEach { (portKey, screenPos) ->
-        val portIsSource = (connectingFromNodeId == portKey.nodeId && connectingFromFieldId == portKey.fieldId) ||
-                (draggingEdgeFromNodeId == portKey.nodeId && draggingEdgeFromFieldId == portKey.fieldId)
-        val isConnectedPort = "${portKey.nodeId}:${portKey.fieldId}" in connectedFieldKeys
-        val dotColor = when {
-            portIsSource || isConnectedPort -> Color(0xFF111111)
-            isConnecting -> Color(0xFF888888)
-            else -> Color(0xFFCCCCCC)
-        }
-        val snapInPx = portHitPx * EDGE_SNAP_IN_MULTIPLIER
-        val snapOutPx = portHitPx * EDGE_SNAP_OUT_MULTIPLIER
-        val dotRadiusPx = 10.dp
-
-        Box(
-            modifier = Modifier
-                .offset {
-                    IntOffset(
-                        (screenPos.x - dotRadiusPx.toPx()).roundToInt(),
-                        (screenPos.y - dotRadiusPx.toPx()).roundToInt(),
-                    )
-                }
-                .size(20.dp)
-                .pointerInput(portKey.nodeId, portKey.fieldId, portKey.side) {
-                    fun currentBoxTopLeft(): Offset {
-                        val currentPos = latestPortPositions[portKey] ?: screenPos
-                        val r = 10.dp.toPx()
-                        return Offset(
-                            (currentPos.x - r).roundToInt().toFloat(),
-                            (currentPos.y - r).roundToInt().toFloat(),
-                        )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    if (isPointerOnPort(down.position, latestPortPositions, portTargetRadiusPx)) {
+                        return@awaitEachGesture
                     }
 
-                    awaitEachGesture {
-                        val down = awaitFirstDown()
-                        down.consume()
-                        var isDragging = false
-                        var snappedTarget: Pair<PortKey, Offset>? = null
-                        var latestLocalPos = down.position
-                        var latestRawScreenPos = currentBoxTopLeft() + latestLocalPos
+                    val hitNodeId = findTopNodeAt(
+                        pointer = down.position,
+                        nodes = latestNodes,
+                        scale = latestScale,
+                        panOffset = latestPanOffset,
+                        density = latestDensity,
+                    ) ?: return@awaitEachGesture
 
+                    down.consume()
+
+                    val downPosition = down.position
+                    var isDragging = false
+                    var wasReleased = false
+
+                    val completedBeforeLongPress = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.find { it.id == down.id } ?: break
-                            change.consume()
-                            latestLocalPos = change.position
-                            latestRawScreenPos = currentBoxTopLeft() + latestLocalPos
-
-                            val nearest = findNearestTargetPort(
-                                pointer = latestRawScreenPos,
-                                sourceNodeId = portKey.nodeId,
-                                portPositions = latestPortPositions,
-                                maxDistancePx = snapInPx,
-                            )
-                            val active = snappedTarget
-                            snappedTarget = when {
-                                nearest != null -> nearest
-                                active != null -> {
-                                    if ((latestRawScreenPos - active.second).getDistance() <= snapOutPx) active
-                                    else null
-                                }
-                                else -> null
-                            }
-                            val latestRenderScreenPos = snappedTarget?.second ?: latestRawScreenPos
 
                             if (!change.pressed) {
-                                if (isDragging) {
-                                    val finalTarget = snappedTarget ?: findNearestTargetPort(
-                                        pointer = latestRawScreenPos,
-                                        sourceNodeId = portKey.nodeId,
-                                        portPositions = latestPortPositions,
-                                        maxDistancePx = portHitPx,
-                                    )
-                                    onIntent(
-                                        ErdBoardIntent.OnEdgeDragEnd(
-                                            finalTarget?.first?.nodeId,
-                                            finalTarget?.first?.fieldId,
-                                        )
-                                    )
-                                } else {
-                                    onIntent(ErdBoardIntent.OnNodeFieldTap(portKey.nodeId, portKey.fieldId))
-                                }
+                                wasReleased = true
+                                change.consume()
                                 break
                             }
 
-                            if (!isDragging &&
-                                (latestLocalPos - down.position).getDistance() > viewConfiguration.touchSlop
-                            ) {
+                            val distance = (change.position - downPosition).getDistance()
+                            if (!isDragging && distance > viewConfiguration.touchSlop) {
                                 isDragging = true
-                                onIntent(ErdBoardIntent.OnEdgeDragStart(portKey.nodeId, portKey.fieldId))
+                                latestOnIntent(ErdBoardIntent.OnDragStart(hitNodeId))
                             }
 
                             if (isDragging) {
-                                onIntent(
-                                    ErdBoardIntent.OnEdgeDragMove(
-                                        screenPos = latestRenderScreenPos,
-                                        snappedTargetNodeId = snappedTarget?.first?.nodeId,
-                                        snappedTargetFieldId = snappedTarget?.first?.fieldId,
-                                        snappedTargetIsRight = snappedTarget?.first?.side,
+                                val delta = change.position - change.previousPosition
+                                if (delta.getDistance() > 0f) {
+                                    change.consume()
+                                    latestOnIntent(
+                                        ErdBoardIntent.OnDragNode(
+                                            nodeId = hitNodeId,
+                                            delta = screenDeltaToBoardDelta(delta, latestScale, latestDensity).toBoardVector(),
+                                        ),
                                     )
-                                )
+                                }
                             }
                         }
                     }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(Modifier.size(8.dp).background(dotColor, CircleShape))
+
+                    if (isDragging) {
+                        if (!wasReleased) {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.find { it.id == down.id } ?: break
+                                if (!change.pressed) {
+                                    change.consume()
+                                    break
+                                }
+
+                                val delta = change.position - change.previousPosition
+                                if (delta.getDistance() > 0f) {
+                                    change.consume()
+                                    latestOnIntent(
+                                        ErdBoardIntent.OnDragNode(
+                                            nodeId = hitNodeId,
+                                            delta = screenDeltaToBoardDelta(delta, latestScale, latestDensity).toBoardVector(),
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+
+                        latestOnIntent(ErdBoardIntent.OnDragEnd(hitNodeId))
+                    } else if (completedBeforeLongPress == null) {
+                        latestOnIntent(ErdBoardIntent.OnSelectNode(hitNodeId))
+                    } else if (wasReleased) {
+                        latestOnIntent(ErdBoardIntent.OnNodeMenu(hitNodeId))
+                    }
+                }
+            },
+    ) {
+        nodes.values.forEach { node ->
+            key(node.id) {
+                EntityCard(
+                    node = node,
+                    scale = scale,
+                    panOffset = panOffset,
+                    density = density,
+                    isSourceNode = node.id == connectingFromNodeId ||
+                            node.id == draggingEdgeFromNodeId ||
+                            node.id == nodeMenuNodeId,
+                    isSelected = node.id in selectedNodeIds,
+                    highlightedFieldIds = highlightedFieldIds,
+                )
+            }
+        }
+
+        // Port dots (field-level, left + right of each field row)
+        portPositions.forEach { (portKey, screenPos) ->
+            val portIsSource = (connectingFromNodeId == portKey.nodeId && connectingFromFieldId == portKey.fieldId) ||
+                    (draggingEdgeFromNodeId == portKey.nodeId && draggingEdgeFromFieldId == portKey.fieldId)
+            val isConnectedPort = "${portKey.nodeId}:${portKey.fieldId}" in connectedFieldKeys
+            val dotColor = when {
+                portIsSource || isConnectedPort -> ErdBoardColors.portActive
+                isConnecting -> ErdBoardColors.portAvailable
+                else -> ErdBoardColors.portInactive
+            }
+            val snapInPx = portHitPx * ErdEdgeConfig.SNAP_IN_MULTIPLIER
+            val snapOutPx = portHitPx * ErdEdgeConfig.SNAP_OUT_MULTIPLIER
+            val dotRadiusDp = ErdBoardDimens.PORT_HIT_TARGET_DP.dp
+
+            Box(
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            (screenPos.x - dotRadiusDp.toPx()).roundToInt(),
+                            (screenPos.y - dotRadiusDp.toPx()).roundToInt(),
+                        )
+                    }
+                    .size(ErdBoardDimens.PORT_HIT_TARGET_SIZE_DP.dp)
+                    .pointerInput(portKey.nodeId, portKey.fieldId, portKey.side) {
+                        fun currentBoxTopLeft(): Offset {
+                            val currentPos = latestPortPositions[portKey] ?: screenPos
+                            val r = ErdBoardDimens.PORT_HIT_TARGET_DP.dp.toPx()
+                            return Offset(
+                                (currentPos.x - r).roundToInt().toFloat(),
+                                (currentPos.y - r).roundToInt().toFloat(),
+                            )
+                        }
+
+                        awaitEachGesture {
+                            val down = awaitFirstDown()
+                            down.consume()
+                            var isDragging = false
+                            var snappedTarget: Pair<PortKey, Offset>? = null
+                            var latestLocalPos = down.position
+                            var latestRawScreenPos = currentBoxTopLeft() + latestLocalPos
+
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.find { it.id == down.id } ?: break
+                                change.consume()
+                                latestLocalPos = change.position
+                                latestRawScreenPos = currentBoxTopLeft() + latestLocalPos
+
+                                val nearest = findNearestTargetPort(
+                                    pointer = latestRawScreenPos,
+                                    sourceNodeId = portKey.nodeId,
+                                    portPositions = latestPortPositions,
+                                    maxDistancePx = snapInPx,
+                                )
+                                val active = snappedTarget
+                                snappedTarget = when {
+                                    nearest != null -> nearest
+                                    active != null -> {
+                                        if ((latestRawScreenPos - active.second).getDistance() <= snapOutPx) active
+                                        else null
+                                    }
+                                    else -> null
+                                }
+                                val latestRenderScreenPos = snappedTarget?.second ?: latestRawScreenPos
+
+                                if (!change.pressed) {
+                                    if (isDragging) {
+                                        val finalTarget = snappedTarget ?: findNearestTargetPort(
+                                            pointer = latestRawScreenPos,
+                                            sourceNodeId = portKey.nodeId,
+                                            portPositions = latestPortPositions,
+                                            maxDistancePx = portHitPx,
+                                        )
+                                        onIntent(
+                                            ErdBoardIntent.OnEdgeDragEnd(
+                                                finalTarget?.first?.nodeId,
+                                                finalTarget?.first?.fieldId,
+                                            )
+                                        )
+                                    } else {
+                                        onIntent(ErdBoardIntent.OnNodeFieldTap(portKey.nodeId, portKey.fieldId))
+                                    }
+                                    break
+                                }
+
+                                if (!isDragging &&
+                                    (latestLocalPos - down.position).getDistance() > viewConfiguration.touchSlop
+                                ) {
+                                    isDragging = true
+                                    onIntent(ErdBoardIntent.OnEdgeDragStart(portKey.nodeId, portKey.fieldId))
+                                }
+
+                                if (isDragging) {
+                                    onIntent(
+                                        ErdBoardIntent.OnEdgeDragMove(
+                                            screenPos = latestRenderScreenPos.toBoardVector(),
+                                            snappedTargetNodeId = snappedTarget?.first?.nodeId,
+                                            snappedTargetFieldId = snappedTarget?.first?.fieldId,
+                                            snappedTargetIsRight = snappedTarget?.first?.side,
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(Modifier.size(ErdBoardDimens.PORT_DOT_SIZE_DP.dp).background(dotColor, CircleShape))
+            }
         }
     }
 }
-
-
-

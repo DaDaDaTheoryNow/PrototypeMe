@@ -6,11 +6,11 @@ import com.dadadadev.prototype_me.domains.board.core.impl.data.json.BoardJsonPay
 import com.dadadadev.prototype_me.domains.board.core.impl.data.json.BoardJsonSnapshotValidator
 import com.dadadadev.prototype_me.domains.board.core.impl.data.json.KotlinxBoardSnapshotJsonCodec
 import com.dadadadev.prototype_me.domains.erd.design.api.data.codec.ErdBoardJsonCodec
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdNodeField
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 import kotlinx.serialization.Serializable
 
 private const val ERD_BOARD_JSON_TYPE = "erd"
@@ -44,11 +44,11 @@ private data class ErdEdgePayload(
 )
 
 private object ErdBoardPayloadAdapter :
-    BoardJsonPayloadAdapter<EntityNode, RelationEdge, ErdNodePayload, ErdEdgePayload> {
+    BoardJsonPayloadAdapter<ErdEntityNode, ErdRelationEdge, ErdNodePayload, ErdEdgePayload> {
 
     override val boardType: String = ERD_BOARD_JSON_TYPE
 
-    override fun nodePayloadOf(node: EntityNode): ErdNodePayload = ErdNodePayload(
+    override fun nodePayloadOf(node: ErdEntityNode): ErdNodePayload = ErdNodePayload(
         name = node.name,
         fields = node.fields.map { field ->
             ErdFieldPayload(
@@ -59,7 +59,7 @@ private object ErdBoardPayloadAdapter :
         },
     )
 
-    override fun edgePayloadOf(edge: RelationEdge): ErdEdgePayload = ErdEdgePayload(
+    override fun edgePayloadOf(edge: ErdRelationEdge): ErdEdgePayload = ErdEdgePayload(
         sourceFieldId = edge.sourceFieldId,
         targetFieldId = edge.targetFieldId,
         label = edge.label,
@@ -69,12 +69,12 @@ private object ErdBoardPayloadAdapter :
         id: String,
         position: BoardPoint,
         payload: ErdNodePayload,
-    ): EntityNode = EntityNode(
+    ): ErdEntityNode = ErdEntityNode(
         id = id,
         name = payload.name,
         position = Position(position.x, position.y),
         fields = payload.fields.map { field ->
-            NodeField(
+            ErdNodeField(
                 id = field.id,
                 name = field.name,
                 type = field.type.toDomain(),
@@ -87,7 +87,7 @@ private object ErdBoardPayloadAdapter :
         sourceId: String,
         targetId: String,
         payload: ErdEdgePayload,
-    ): RelationEdge = RelationEdge(
+    ): ErdRelationEdge = ErdRelationEdge(
         id = id,
         sourceNodeId = sourceId,
         sourceFieldId = payload.sourceFieldId,
@@ -97,7 +97,7 @@ private object ErdBoardPayloadAdapter :
     )
 }
 
-private val erdBoardJsonValidator = BoardJsonSnapshotValidator<EntityNode, RelationEdge> { snapshot ->
+private val erdBoardJsonValidator = BoardJsonSnapshotValidator<ErdEntityNode, ErdRelationEdge> { snapshot ->
     snapshot.edges.values.forEach { edge ->
         val sourceNode = snapshot.entities[edge.sourceNodeId]
             ?: error("Unknown source node: ${edge.sourceNodeId}")
@@ -117,7 +117,7 @@ private val erdBoardJsonValidator = BoardJsonSnapshotValidator<EntityNode, Relat
     }
 }
 
-class ErdBoardJsonCodecImpl : ErdBoardJsonCodec {
+internal class ErdBoardJsonCodecImpl : ErdBoardJsonCodec {
     private val delegate = KotlinxBoardSnapshotJsonCodec(
         nodePayloadSerializer = ErdNodePayload.serializer(),
         edgePayloadSerializer = ErdEdgePayload.serializer(),
@@ -125,10 +125,10 @@ class ErdBoardJsonCodecImpl : ErdBoardJsonCodec {
         validator = erdBoardJsonValidator,
     )
 
-    override fun encode(snapshot: BoardSnapshot<EntityNode, RelationEdge>): String =
+    override fun encode(snapshot: BoardSnapshot<ErdEntityNode, ErdRelationEdge>): String =
         delegate.encode(snapshot)
 
-    override fun decode(rawJson: String): Result<BoardSnapshot<EntityNode, RelationEdge>> =
+    override fun decode(rawJson: String): Result<BoardSnapshot<ErdEntityNode, ErdRelationEdge>> =
         delegate.decode(rawJson)
 }
 

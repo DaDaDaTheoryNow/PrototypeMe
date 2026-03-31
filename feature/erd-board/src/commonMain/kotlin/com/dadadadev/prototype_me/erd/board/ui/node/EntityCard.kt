@@ -21,44 +21,37 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.erd.board.ui.canvas.CARD_DIVIDER_DP
-import com.dadadadev.prototype_me.erd.board.ui.canvas.CARD_FIELD_ROW_DP
-import com.dadadadev.prototype_me.erd.board.ui.canvas.CARD_HEADER_DP
-import com.dadadadev.prototype_me.feature.board.core.ui.input.nodeGestureHandler
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.layout.ErdNodeDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenX
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenY
-import com.dadadadev.prototype_me.feature.board.core.ui.viewport.screenDeltaToBoardDelta
 
 @Composable
-fun EntityCard(
-    node: EntityNode,
+internal fun EntityCard(
+    node: ErdEntityNode,
     scale: Float,
     panOffset: Offset,
     density: Float,
     isSourceNode: Boolean,
     isSelected: Boolean = false,
     highlightedFieldIds: Set<String> = emptySet(),
-    onDragStart: () -> Unit,
-    onDrag: (Offset) -> Unit,
-    onDragEnd: () -> Unit,
-    onTap: () -> Unit,
-    onLongPress: () -> Unit,
 ) {
     val isLocked = node.lockedBy != null
     val isHighlighted = isSourceNode || isSelected
     val borderColor = when {
-        isHighlighted -> Color(0xFF111111)
-        isLocked -> Color(0xFFBBBBBB)
-        else -> Color(0xFFDDDDDD)
+        isHighlighted -> ErdBoardColors.borderStrong
+        isLocked -> ErdBoardColors.borderLocked
+        else -> ErdBoardColors.borderDefault
     }
-    val borderWidth = if (isHighlighted) 2.dp else 1.dp
-    val backgroundColor = if (isHighlighted) Color(0xFFF8F8F8) else Color.White
+    val borderWidth = if (isHighlighted) ErdBoardDimens.CARD_BORDER_WIDTH_HIGHLIGHT_DP.dp else ErdBoardDimens.CARD_BORDER_WIDTH_DEFAULT_DP.dp
+    val backgroundColor = if (isHighlighted) ErdBoardColors.surfaceCardHighlight else ErdBoardColors.surfaceCard
 
     Box(
         modifier = Modifier.graphicsLayer {
@@ -70,47 +63,37 @@ fun EntityCard(
         },
     ) {
         Card(
-            modifier = Modifier
-                .width(node.size.width.dp)
-                .pointerInput(node.id, scale, density) {
-                    nodeGestureHandler(
-                        scale = scale,
-                        onDragStart = onDragStart,
-                        onDrag = { screenDelta ->
-                            onDrag(screenDeltaToBoardDelta(screenDelta, scale, density))
-                        },
-                        onDragEnd = onDragEnd,
-                        onTap = onTap,
-                        onLongPress = onLongPress,
-                    )
-                },
-            shape = RoundedCornerShape(6.dp),
+            modifier = Modifier.width(node.size.width.dp),
+            shape = RoundedCornerShape(ErdBoardDimens.CARD_CORNER_RADIUS_DP.dp),
             border = BorderStroke(borderWidth, borderColor),
             colors = CardDefaults.cardColors(containerColor = backgroundColor),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isHighlighted) 6.dp else 2.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isHighlighted) ErdBoardDimens.CARD_ELEVATION_HIGHLIGHT_DP.dp
+                else ErdBoardDimens.CARD_ELEVATION_DEFAULT_DP.dp,
+            ),
         ) {
             Column {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(CARD_HEADER_DP.dp)
-                        .padding(horizontal = 12.dp),
+                        .height(ErdNodeDimens.CARD_HEADER_DP.dp)
+                        .padding(horizontal = ErdBoardDimens.CARD_HEADER_PADDING_HORIZONTAL_DP.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = node.name,
-                            fontSize = 13.sp,
+                            fontSize = ErdBoardDimens.CARD_TITLE_FONT_SP.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isLocked) Color(0xFF888888) else Color(0xFF111111),
+                            color = if (isLocked) ErdBoardColors.textDisabled else ErdBoardColors.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         if (isLocked) {
                             Text(
-                                text = "* ${node.lockedBy}",
-                                fontSize = 9.sp,
-                                color = Color(0xFFBBBBBB),
+                                text = ErdBoardStrings.cardLockedLabel(node.lockedBy.orEmpty()),
+                                fontSize = ErdBoardDimens.CARD_LOCKED_FONT_SP.sp,
+                                color = ErdBoardColors.textHint,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -119,31 +102,31 @@ fun EntityCard(
                 }
 
                 if (node.fields.isNotEmpty()) {
-                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = CARD_DIVIDER_DP.dp)
+                    HorizontalDivider(color = ErdBoardColors.divider, thickness = ErdNodeDimens.CARD_DIVIDER_DP.dp)
                     node.fields.forEach { field ->
                         val isHighlightedField = field.id in highlightedFieldIds
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(CARD_FIELD_ROW_DP.dp)
+                                .height(ErdNodeDimens.CARD_FIELD_ROW_DP.dp)
                                 .background(
-                                    if (isHighlightedField) Color(0xFFF2F2F2) else Color.Transparent,
+                                    if (isHighlightedField) ErdBoardColors.surfaceFieldHighlight else Color.Transparent,
                                 )
-                                .padding(start = 12.dp, end = 8.dp),
+                                .padding(start = ErdBoardDimens.CARD_FIELD_PADDING_START_DP.dp, end = ErdBoardDimens.CARD_FIELD_PADDING_END_DP.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 text = field.name,
-                                fontSize = 11.sp,
-                                color = if (isHighlightedField) Color(0xFF111111) else Color(0xFF444444),
+                                fontSize = ErdBoardDimens.CARD_FIELD_NAME_FONT_SP.sp,
+                                color = if (isHighlightedField) ErdBoardColors.textPrimary else ErdBoardColors.textTertiary,
                                 modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
                                 text = field.type.name.lowercase(),
-                                fontSize = 10.sp,
-                                color = Color(0xFFBBBBBB),
+                                fontSize = ErdBoardDimens.CARD_FIELD_TYPE_FONT_SP.sp,
+                                color = ErdBoardColors.textHint,
                             )
                         }
                     }

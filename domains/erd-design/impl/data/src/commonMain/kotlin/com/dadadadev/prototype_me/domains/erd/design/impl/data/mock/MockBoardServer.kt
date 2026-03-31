@@ -3,7 +3,6 @@ package com.dadadadev.prototype_me.domains.erd.design.impl.data.mock
 import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSyncEffect
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdBoardAction
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdBoardContext
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.withFields
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MockBoardServer {
+internal class MockBoardServer {
 
     private val _stateFlow = MutableStateFlow(InitialMockData.create())
     val serverStateFlow: StateFlow<ErdBoardContext> = _stateFlow.asStateFlow()
@@ -83,7 +82,7 @@ class MockBoardServer {
         is ErdBoardAction.AddField -> {
             val node = context.nodes[action.nodeId] ?: return context
             context.copy(
-                nodes = context.nodes + (action.nodeId to node.withFields(node.fields + action.field)),
+                nodes = context.nodes + (action.nodeId to node.copy(fields = node.fields + action.field)),
             )
         }
 
@@ -91,7 +90,7 @@ class MockBoardServer {
             val node = context.nodes[action.nodeId] ?: return context
             context.copy(
                 nodes = context.nodes + (
-                    action.nodeId to node.withFields(node.fields.filter { it.id != action.fieldId })
+                    action.nodeId to node.copy(fields = node.fields.filter { it.id != action.fieldId })
                 ),
             )
         }
@@ -106,7 +105,7 @@ class MockBoardServer {
                 }
             }
             context.copy(
-                nodes = context.nodes + (action.nodeId to node.withFields(updatedFields)),
+                nodes = context.nodes + (action.nodeId to node.copy(fields = updatedFields)),
             )
         }
 

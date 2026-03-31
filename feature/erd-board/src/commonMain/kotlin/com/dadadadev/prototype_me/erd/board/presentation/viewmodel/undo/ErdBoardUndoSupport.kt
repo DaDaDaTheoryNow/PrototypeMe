@@ -1,18 +1,19 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.withFields
+import com.dadadadev.prototype_me.erd.board.layout.withFields
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.addEdgeAction
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.addFieldAction
+import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.addNodeAction
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.buildAddActions
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.clearLocallyMoved
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.deleteEdgeAction
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.deleteNodeAction
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.markLocallyMoved
-import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.syncNodeMove
-import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.syncNodeMoves
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.removeFieldAction
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.renameFieldAction
+import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.syncNodeMove
+import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.syncNodeMoves
 
 internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
     when (action) {
@@ -29,7 +30,7 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                     selectedEdgeId = state.selectedEdgeId.takeIf(remainingEdges::containsKey),
                 )
             }
-            repository.sendAction(deleteNodeAction(action.nodeId))
+            useCases.sendBoardActions(listOf(deleteNodeAction(action.nodeId)))
         }
 
         is ErdUndoAction.NodeDeleted -> {
@@ -39,7 +40,7 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                     edges = state.edges + action.edges.associateBy { it.id },
                 )
             }
-            repository.sendActions(buildAddActions(listOf(action.node), action.edges))
+            useCases.sendBoardActions(buildAddActions(listOf(action.node), action.edges))
         }
 
         is ErdUndoAction.NodeMoved -> {
@@ -80,7 +81,7 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                     selectedEdgeId = state.selectedEdgeId.takeIf(remainingEdges::containsKey),
                 )
             }
-            repository.sendActions(action.nodeIds.map(::deleteNodeAction))
+            useCases.sendBoardActions(action.nodeIds.map(::deleteNodeAction))
         }
 
         is ErdUndoAction.NodesDeleted -> {
@@ -90,7 +91,7 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                     edges = state.edges + action.edges.associateBy { it.id },
                 )
             }
-            repository.sendActions(buildAddActions(action.nodes, action.edges))
+            useCases.sendBoardActions(buildAddActions(action.nodes, action.edges))
         }
 
         is ErdUndoAction.EdgeAdded -> {
@@ -100,26 +101,26 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                     selectedEdgeId = if (state.selectedEdgeId == action.edgeId) null else state.selectedEdgeId,
                 )
             }
-            repository.sendAction(deleteEdgeAction(action.edgeId))
+            useCases.sendBoardActions(listOf(deleteEdgeAction(action.edgeId)))
         }
 
         is ErdUndoAction.EdgeDeleted -> {
             reduce { state.copy(edges = state.edges + (action.edge.id to action.edge)) }
-            repository.sendAction(addEdgeAction(action.edge))
+            useCases.sendBoardActions(listOf(addEdgeAction(action.edge)))
         }
 
         is ErdUndoAction.FieldAdded -> {
             val node = state.nodes[action.nodeId] ?: return@intent
             val updatedNode = node.withFields(node.fields.filter { it.id != action.fieldId })
             reduce { state.copy(nodes = state.nodes + (action.nodeId to updatedNode)) }
-            repository.sendAction(removeFieldAction(action.nodeId, action.fieldId))
+            useCases.sendBoardActions(listOf(removeFieldAction(action.nodeId, action.fieldId)))
         }
 
         is ErdUndoAction.FieldRemoved -> {
             val node = state.nodes[action.nodeId] ?: return@intent
             val updatedNode = node.withFields(node.fields + action.field)
             reduce { state.copy(nodes = state.nodes + (action.nodeId to updatedNode)) }
-            repository.sendAction(addFieldAction(action.nodeId, action.field))
+            useCases.sendBoardActions(listOf(addFieldAction(action.nodeId, action.field)))
         }
 
         is ErdUndoAction.FieldRenamed -> {
@@ -132,12 +133,14 @@ internal fun ErdBoardViewModel.applyUndoAction(action: ErdUndoAction) = intent {
                 }
             }
             reduce { state.copy(nodes = state.nodes + (action.nodeId to node.withFields(updatedFields))) }
-            repository.sendAction(
-                renameFieldAction(
-                    nodeId = action.nodeId,
-                    fieldId = action.fieldId,
-                    newName = action.previousName,
-                    newType = action.previousType,
+            useCases.sendBoardActions(
+                listOf(
+                    renameFieldAction(
+                        nodeId = action.nodeId,
+                        fieldId = action.fieldId,
+                        newName = action.previousName,
+                        newType = action.previousType,
+                    ),
                 ),
             )
         }

@@ -1,0 +1,1157 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "backend",
+    "description": "",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/boards": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "create_board",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBoardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Board created"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "get_board",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Board context"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/actions": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "submit_action",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Action accepted"
+          },
+          "409": {
+            "description": "Action rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionRejectedResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/export": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "export_board_json",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Board export document"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/import": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "import_board_json",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErdBoardExportDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Import accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBoardResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/join": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "join_board",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBoardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Join board"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/locks/release": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "release_lock",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Lock released"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/boards/{board_id}/locks/request": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "request_lock",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Lock granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockGrantedResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lock rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockRejectedResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/invites/{invite_token}/resolve": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "resolve_invite",
+        "parameters": [
+          {
+            "name": "invite_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolve invite"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/realtime": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "operationId": "open_realtime_socket",
+        "responses": {
+          "101": {
+            "description": "Switching Protocols"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActionRejectedResponse": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "actionId",
+          "reason"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "actionId": {
+            "type": "string"
+          },
+          "lockedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "BoardPoint": {
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "properties": {
+          "x": {
+            "type": "number",
+            "format": "float"
+          },
+          "y": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "BoardRole": {
+        "type": "string",
+        "enum": [
+          "owner",
+          "editor",
+          "viewer"
+        ]
+      },
+      "BoardSize": {
+        "type": "object",
+        "required": [
+          "width",
+          "height"
+        ],
+        "properties": {
+          "height": {
+            "type": "number",
+            "format": "float"
+          },
+          "width": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "CreateBoardRequest": {
+        "type": "object",
+        "required": [
+          "displayName"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateBoardResponse": {
+        "type": "object",
+        "required": [
+          "approved",
+          "boardId",
+          "inviteToken",
+          "webUrl",
+          "deepLink",
+          "createdAt"
+        ],
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "boardId": {
+            "$ref": "#/components/schemas/String"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/String"
+          },
+          "deepLink": {
+            "type": "string"
+          },
+          "inviteToken": {
+            "$ref": "#/components/schemas/String"
+          },
+          "webUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "ErdBoardAction": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "nodeId",
+              "newPosition",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "newPosition": {
+                "$ref": "#/components/schemas/BoardPoint"
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "MoveNode"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "node",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "node": {
+                "$ref": "#/components/schemas/ErdEntityNode"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AddNode"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "nodeId",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "DeleteNode"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "edge",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "edge": {
+                "$ref": "#/components/schemas/ErdRelationEdge"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AddEdge"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "edgeId",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "edgeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "DeleteEdge"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "nodeId",
+              "field",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "field": {
+                "$ref": "#/components/schemas/ErdNodeField"
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AddField"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "nodeId",
+              "fieldId",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "fieldId": {
+                "type": "string"
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "RemoveField"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "actionId",
+              "nodeId",
+              "fieldId",
+              "newName",
+              "newType",
+              "type"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string"
+              },
+              "fieldId": {
+                "type": "string"
+              },
+              "newName": {
+                "type": "string"
+              },
+              "newType": {
+                "$ref": "#/components/schemas/FieldType"
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "RenameField"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ErdBoardContext": {
+        "type": "object",
+        "required": [
+          "boardId",
+          "nodes",
+          "edges"
+        ],
+        "properties": {
+          "boardId": {
+            "$ref": "#/components/schemas/String"
+          },
+          "edges": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ErdRelationEdge"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "nodes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ErdEntityNode"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ErdBoardExportDocument": {
+        "type": "object",
+        "required": [
+          "format",
+          "version",
+          "boardType",
+          "nodes",
+          "edges"
+        ],
+        "properties": {
+          "boardType": {
+            "type": "string"
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErdExportEdgeItem"
+            }
+          },
+          "format": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErdExportNodeItem"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ErdEntityNode": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "position",
+          "fields",
+          "size"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErdNodeField"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "lockedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/BoardPoint"
+          },
+          "size": {
+            "$ref": "#/components/schemas/BoardSize"
+          }
+        }
+      },
+      "ErdExportEdgeItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "sourceId",
+          "targetId",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ErdExportEdgePayload"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          }
+        }
+      },
+      "ErdExportEdgePayload": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceFieldId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetFieldId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ErdExportFieldPayload": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FieldType"
+          }
+        }
+      },
+      "ErdExportNodeItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "position",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ErdExportNodePayload"
+          },
+          "position": {
+            "$ref": "#/components/schemas/BoardPoint"
+          }
+        }
+      },
+      "ErdExportNodePayload": {
+        "type": "object",
+        "required": [
+          "name",
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErdExportFieldPayload"
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ErdNodeField": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FieldType"
+          }
+        }
+      },
+      "ErdRelationEdge": {
+        "type": "object",
+        "required": [
+          "id",
+          "sourceNodeId",
+          "targetNodeId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceFieldId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceNodeId": {
+            "type": "string"
+          },
+          "targetFieldId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetNodeId": {
+            "type": "string"
+          }
+        }
+      },
+      "FieldType": {
+        "type": "string",
+        "enum": [
+          "TEXT",
+          "NUMBER",
+          "BOOLEAN",
+          "DATE"
+        ]
+      },
+      "GetBoardResponse": {
+        "type": "object",
+        "required": [
+          "board_id",
+          "version",
+          "context"
+        ],
+        "properties": {
+          "board_id": {
+            "$ref": "#/components/schemas/String"
+          },
+          "context": {
+            "$ref": "#/components/schemas/ErdBoardContext"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ImportBoardResponse": {
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "JoinBoardRequest": {
+        "type": "object",
+        "required": [
+          "displayName"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "inviteToken": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "JoinBoardResponse": {
+        "type": "object",
+        "required": [
+          "boardId",
+          "userId",
+          "displayName",
+          "role",
+          "sessionToken",
+          "expiresAt"
+        ],
+        "properties": {
+          "boardId": {
+            "$ref": "#/components/schemas/String"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/String"
+          },
+          "role": {
+            "$ref": "#/components/schemas/BoardRole"
+          },
+          "sessionToken": {
+            "$ref": "#/components/schemas/String"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/String"
+          }
+        }
+      },
+      "LockGrantedResponse": {
+        "type": "object",
+        "required": [
+          "granted",
+          "nodeId",
+          "lockedBy"
+        ],
+        "properties": {
+          "granted": {
+            "type": "boolean"
+          },
+          "lockedBy": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string"
+          }
+        }
+      },
+      "LockRejectedResponse": {
+        "type": "object",
+        "required": [
+          "granted",
+          "nodeId",
+          "lockedBy"
+        ],
+        "properties": {
+          "granted": {
+            "type": "boolean"
+          },
+          "lockedBy": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string"
+          }
+        }
+      },
+      "LockRequest": {
+        "type": "object",
+        "required": [
+          "nodeId"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          }
+        }
+      },
+      "ResolveInviteResponse": {
+        "type": "object",
+        "required": [
+          "boardId",
+          "webUrl",
+          "deepLink",
+          "canJoin"
+        ],
+        "properties": {
+          "boardId": {
+            "$ref": "#/components/schemas/String"
+          },
+          "canJoin": {
+            "type": "boolean"
+          },
+          "deepLink": {
+            "type": "string"
+          },
+          "webUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "String": {
+        "type": "string"
+      },
+      "SubmitActionRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ErdBoardAction"
+          }
+        }
+      },
+      "SubmitActionResponse": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "actionId",
+          "serverVersion"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "actionId": {
+            "type": "string"
+          },
+          "serverVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer_auth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Input your `\u003Cyour-jwt\u003E`"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer_auth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Boards",
+      "description": "Board management and collaboration APIs"
+    }
+  ]
+}

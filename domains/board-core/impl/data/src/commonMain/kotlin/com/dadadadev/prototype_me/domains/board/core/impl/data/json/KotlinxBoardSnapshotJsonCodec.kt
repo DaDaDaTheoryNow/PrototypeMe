@@ -10,7 +10,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-val defaultBoardJson: Json = Json {
+internal val defaultBoardJson: Json = Json {
     prettyPrint = true
     encodeDefaults = false
     ignoreUnknownKeys = true

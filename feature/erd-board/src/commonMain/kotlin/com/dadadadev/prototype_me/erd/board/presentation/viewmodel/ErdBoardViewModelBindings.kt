@@ -1,17 +1,19 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
 import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSyncEffect
+import com.dadadadev.prototype_me.erd.board.layout.remeasured
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardSideEffect
 
 internal fun ErdBoardViewModel.connectBoard() = intent {
-    repository.connect(DEFAULT_BOARD_ID, DEFAULT_CURRENT_USER_ID)
+    useCases.connectToBoard(boardSession.boardId, boardSession.currentUserId)
 }
 
 internal fun ErdBoardViewModel.observeBoardState() = intent {
-    repository.observeBoardState(DEFAULT_BOARD_ID).collect { remote ->
+    useCases.observeBoardState(boardSession.boardId).collect { remote ->
+        val remoteNodes = remote.nodes.mapValues { (_, node) -> node.remeasured() }
         val locallyMovedNodeIds = runtimeState.locallyMovedNodeIds
-        val mergedNodes = mergeNodes(state.nodes, remote.nodes, locallyMovedNodeIds)
+        val mergedNodes = mergeNodes(state.nodes, remoteNodes, locallyMovedNodeIds)
         val caughtUpNodeIds = locallyMovedNodeIds.filter { nodeId ->
             val localNode = state.nodes[nodeId]
             val remoteNode = remote.nodes[nodeId]
@@ -31,10 +33,14 @@ internal fun ErdBoardViewModel.observeBoardState() = intent {
 }
 
 internal fun ErdBoardViewModel.observeBoardSideEffects() = intent {
-    repository.observeSideEffects().collect { effect ->
+    useCases.observeSyncEffects().collect { effect ->
         when (effect) {
             is BoardSyncEffect.LockRejected -> {
                 postSideEffect(ErdBoardSideEffect.ShowLockError(effect.nodeId, effect.lockedBy))
+            }
+
+            is BoardSyncEffect.ConnectionFailed -> {
+                postSideEffect(ErdBoardSideEffect.ShowConnectionError(effect.message))
             }
 
             BoardSyncEffect.ConnectionLost -> {

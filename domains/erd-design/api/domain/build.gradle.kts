@@ -18,6 +18,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":domains:board-core:api:domain"))
+            api(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies { implementation(libs.kotlin.test) }
     }
@@ -32,4 +33,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-

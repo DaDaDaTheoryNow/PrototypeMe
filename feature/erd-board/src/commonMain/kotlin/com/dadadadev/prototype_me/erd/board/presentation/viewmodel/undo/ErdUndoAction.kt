@@ -1,10 +1,10 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdNodeField
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 
 /**
  * Describes a single reversible board operation stored on the undo stack.
@@ -16,8 +16,8 @@ sealed class ErdUndoAction {
     data class NodeAdded(val nodeId: String) : ErdUndoAction()
 
     data class NodeDeleted(
-        val node: EntityNode,
-        val edges: List<RelationEdge>,
+        val node: ErdEntityNode,
+        val edges: List<ErdRelationEdge>,
     ) : ErdUndoAction()
 
     data class NodeMoved(
@@ -31,14 +31,14 @@ sealed class ErdUndoAction {
     ) : ErdUndoAction()
 
     data class NodesDeleted(
-        val nodes: List<EntityNode>,
-        val edges: List<RelationEdge>,
+        val nodes: List<ErdEntityNode>,
+        val edges: List<ErdRelationEdge>,
     ) : ErdUndoAction()
 
     data class EdgeAdded(val edgeId: String) : ErdUndoAction()
-    data class EdgeDeleted(val edge: RelationEdge) : ErdUndoAction()
+    data class EdgeDeleted(val edge: ErdRelationEdge) : ErdUndoAction()
     data class FieldAdded(val nodeId: String, val fieldId: String) : ErdUndoAction()
-    data class FieldRemoved(val nodeId: String, val field: NodeField) : ErdUndoAction()
+    data class FieldRemoved(val nodeId: String, val field: ErdNodeField) : ErdUndoAction()
 
     data class FieldRenamed(
         val nodeId: String,

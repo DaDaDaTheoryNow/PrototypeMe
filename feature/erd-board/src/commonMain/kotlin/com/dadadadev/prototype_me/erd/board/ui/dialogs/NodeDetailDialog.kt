@@ -24,17 +24,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdNodeField
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 
 @Composable
 internal fun NodeDetailDialog(
     nodeName: String,
-    fields: List<NodeField>,
+    fields: List<ErdNodeField>,
     onAddField: (name: String, type: FieldType) -> Unit,
     onRemoveField: (fieldId: String) -> Unit,
     onDismiss: () -> Unit,
@@ -44,93 +46,99 @@ internal fun NodeDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        shape = RoundedCornerShape(12.dp),
+        containerColor = ErdBoardColors.surfaceDialog,
+        shape = RoundedCornerShape(ErdBoardDimens.DIALOG_CORNER_RADIUS_DP.dp),
         title = {
             Text(
                 nodeName,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = Color(0xFF111111),
+                fontSize = ErdBoardDimens.DIALOG_TITLE_FONT_SP.sp,
+                color = ErdBoardColors.textPrimary,
             )
         },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 if (fields.isNotEmpty()) {
                     Text(
-                        "Fields",
-                        fontSize = 11.sp,
+                        ErdBoardStrings.DETAIL_FIELDS_HEADER,
+                        fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFAAAAAA),
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        color = ErdBoardColors.textPlaceholder,
+                        modifier = Modifier.padding(bottom = ErdBoardDimens.DIALOG_LABEL_BOTTOM_PADDING_DP.dp),
                     )
                     fields.forEach { field ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = ErdBoardDimens.DIALOG_ROW_VERTICAL_PADDING_DP.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 field.name,
-                                fontSize = 13.sp,
-                                color = Color(0xFF333333),
+                                fontSize = ErdBoardDimens.DIALOG_FIELD_NAME_FONT_SP.sp,
+                                color = ErdBoardColors.textSecondary,
                                 modifier = Modifier.weight(1f),
                             )
                             Text(
                                 field.type.name.lowercase(),
-                                fontSize = 11.sp,
-                                color = Color(0xFFAAAAAA),
-                                modifier = Modifier.padding(horizontal = 8.dp),
+                                fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+                                color = ErdBoardColors.textPlaceholder,
+                                modifier = Modifier.padding(horizontal = ErdBoardDimens.DIALOG_FIELD_TYPE_PADDING_H_DP.dp),
                             )
                             TextButton(onClick = { onRemoveField(field.id) }) {
-                                Text("x", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                                Text(
+                                    ErdBoardStrings.DETAIL_REMOVE_FIELD,
+                                    color = ErdBoardColors.textGhost,
+                                    fontSize = ErdBoardDimens.DIALOG_BODY_FONT_SP.sp,
+                                )
                             }
                         }
                     }
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color(0xFFEEEEEE),
+                        modifier = Modifier.padding(vertical = ErdBoardDimens.DIALOG_SECTION_SPACING_LG_DP.dp),
+                        color = ErdBoardColors.divider,
                     )
                 }
 
                 Text(
-                    "Add field",
-                    fontSize = 11.sp,
+                    ErdBoardStrings.DETAIL_ADD_FIELD_HEADER,
+                    fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFAAAAAA),
-                    modifier = Modifier.padding(bottom = 6.dp),
+                    color = ErdBoardColors.textPlaceholder,
+                    modifier = Modifier.padding(bottom = ErdBoardDimens.DIALOG_SECTION_SPACING_MD_DP.dp),
                 )
                 OutlinedTextField(
                     value = newFieldName,
                     onValueChange = { newFieldName = it },
-                    placeholder = { Text("Field name", color = Color(0xFFCCCCCC)) },
+                    placeholder = { Text(ErdBoardStrings.DETAIL_FIELD_NAME_PLACEHOLDER, color = ErdBoardColors.textGhost) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF111111),
-                        unfocusedBorderColor = Color(0xFFDDDDDD),
-                        cursorColor = Color(0xFF111111),
+                        focusedBorderColor = ErdBoardColors.borderStrong,
+                        unfocusedBorderColor = ErdBoardColors.borderDefault,
+                        cursorColor = ErdBoardColors.borderStrong,
                     ),
                 )
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Spacer(Modifier.height(ErdBoardDimens.DIALOG_SECTION_SPACING_LG_DP.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(ErdBoardDimens.DIALOG_SECTION_SPACING_MD_DP.dp)) {
                     FieldType.entries.forEach { type ->
                         val isSelected = selectedType == type
                         TextButton(
                             onClick = { selectedType = type },
                             modifier = Modifier.background(
-                                if (isSelected) Color(0xFF111111) else Color(0xFFF0F0F0),
-                                RoundedCornerShape(16.dp),
+                                if (isSelected) ErdBoardColors.borderStrong else ErdBoardColors.surfaceChipInactive,
+                                RoundedCornerShape(ErdBoardDimens.DIALOG_CHIP_CORNER_RADIUS_DP.dp),
                             ),
                         ) {
                             Text(
                                 type.name.lowercase(),
-                                fontSize = 11.sp,
-                                color = if (isSelected) Color.White else Color(0xFF555555),
+                                fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+                                color = if (isSelected) ErdBoardColors.textOnAccent else ErdBoardColors.textMuted,
                             )
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(ErdBoardDimens.DIALOG_SECTION_SPACING_LG_DP.dp))
                 TextButton(
                     onClick = {
                         if (newFieldName.isNotBlank()) {
@@ -140,18 +148,20 @@ internal fun NodeDetailDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF111111), RoundedCornerShape(8.dp)),
+                        .background(
+                            ErdBoardColors.borderStrong,
+                            RoundedCornerShape(ErdBoardDimens.DIALOG_BUTTON_CORNER_RADIUS_DP.dp),
+                        ),
                 ) {
-                    Text("Add field", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(ErdBoardStrings.DETAIL_ADD_FIELD_BUTTON, color = ErdBoardColors.textOnAccent, fontWeight = FontWeight.SemiBold)
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done", color = Color(0xFF111111), fontWeight = FontWeight.SemiBold)
+                Text(ErdBoardStrings.DETAIL_DONE, color = ErdBoardColors.textPrimary, fontWeight = FontWeight.SemiBold)
             }
         },
     )
 }
-
 

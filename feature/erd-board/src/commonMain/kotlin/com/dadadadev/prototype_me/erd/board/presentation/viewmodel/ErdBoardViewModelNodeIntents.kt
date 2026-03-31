@@ -1,8 +1,7 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdNodeField
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.NodeField
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo.ErdUndoAction
@@ -10,21 +9,21 @@ import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo.ErdUndoA
 internal fun ErdBoardViewModel.handleNodeIntent(boardIntent: ErdBoardIntent) = intent {
     when (boardIntent) {
         is ErdBoardIntent.OnAddNode -> {
-            val nodeId = newBoardActionId()
-            val node = EntityNode(
-                id = nodeId,
-                name = boardIntent.name.ifBlank { "Node" },
-                position = boardIntent.position,
-                fields = listOf(NodeField(newBoardActionId(), "id", FieldType.NUMBER)),
+            val initialFields = listOf(
+                ErdNodeField(newBoardActionId(), "id", FieldType.NUMBER),
             )
-            runtimeState = runtimeState.pushUndo(ErdUndoAction.NodeAdded(nodeId))
+            val node = useCases.addNode(
+                boardIntent.name.ifBlank { "Node" },
+                boardIntent.position,
+                initialFields,
+            )
+            runtimeState = runtimeState.pushUndo(ErdUndoAction.NodeAdded(node.id))
             reduce {
                 state.copy(
-                    nodes = state.nodes + (nodeId to node),
+                    nodes = state.nodes + (node.id to node),
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(addNodeAction(node))
         }
 
         is ErdBoardIntent.OnDeleteNode -> {
@@ -48,7 +47,7 @@ internal fun ErdBoardViewModel.handleNodeIntent(boardIntent: ErdBoardIntent) = i
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendAction(deleteNodeAction(nodeId))
+            useCases.deleteNode(nodeId)
         }
 
         is ErdBoardIntent.OnDeleteNodes -> {
@@ -73,7 +72,7 @@ internal fun ErdBoardViewModel.handleNodeIntent(boardIntent: ErdBoardIntent) = i
                     canUndo = runtimeState.canUndo,
                 )
             }
-            repository.sendActions(nodeIds.map(::deleteNodeAction))
+            useCases.deleteNodes(nodeIds)
         }
 
         else -> Unit

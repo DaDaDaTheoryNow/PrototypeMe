@@ -1,6 +1,8 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdBoardAction
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
+import com.dadadadev.prototype_me.erd.board.config.ErdBoardConfig
 import com.dadadadev.prototype_me.erd.board.presentation.ErdBoardViewModel
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardSideEffect
@@ -53,8 +55,8 @@ internal fun ErdBoardViewModel.handleGlobalIntent(boardIntent: ErdBoardIntent) =
                 node.copy(
                     id = nodeIdRemap.getValue(node.id),
                     position = Position(
-                        x = node.position.x + PASTE_OFFSET,
-                        y = node.position.y + PASTE_OFFSET,
+                        x = node.position.x + ErdBoardConfig.PASTE_OFFSET_DP,
+                        y = node.position.y + ErdBoardConfig.PASTE_OFFSET_DP,
                     ),
                     fields = node.fields.map { field ->
                         field.copy(id = fieldIdRemap.getValue(field.id))
@@ -85,7 +87,7 @@ internal fun ErdBoardViewModel.handleGlobalIntent(boardIntent: ErdBoardIntent) =
                 )
             }
             postSideEffect(ErdBoardSideEffect.SelectPastedNodes(newNodeIds.toSet()))
-            repository.sendActions(buildAddActions(newNodes, newEdges))
+            useCases.sendBoardActions(buildAddActions(newNodes, newEdges))
         }
 
         is ErdBoardIntent.OnImportBoard -> {
@@ -93,8 +95,12 @@ internal fun ErdBoardViewModel.handleGlobalIntent(boardIntent: ErdBoardIntent) =
             val importedEdges = boardIntent.snapshot.edges
 
             // Build sync actions: delete all existing content, then add imported content.
-            val deleteEdgeActions = state.edges.keys.map { deleteEdgeAction(it) }
-            val deleteNodeActions = state.nodes.keys.map { deleteNodeAction(it) }
+            val deleteEdgeActions = state.edges.keys.map { edgeId ->
+                ErdBoardAction.DeleteEdge(edgeId = edgeId, actionId = newBoardActionId())
+            }
+            val deleteNodeActions = state.nodes.keys.map { nodeId ->
+                ErdBoardAction.DeleteNode(nodeId = nodeId, actionId = newBoardActionId())
+            }
             val addActions = buildAddActions(
                 nodes = importedNodes.values.toList(),
                 edges = importedEdges.values.toList(),
@@ -122,7 +128,7 @@ internal fun ErdBoardViewModel.handleGlobalIntent(boardIntent: ErdBoardIntent) =
                 )
             }
 
-            repository.sendActions(deleteEdgeActions + deleteNodeActions + addActions)
+            useCases.sendBoardActions(deleteEdgeActions + deleteNodeActions + addActions)
         }
 
         else -> Unit

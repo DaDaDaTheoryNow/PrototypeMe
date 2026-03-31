@@ -1,16 +1,12 @@
 package com.dadadadev.prototype_me.erd.board.ui.canvas
 
 import androidx.compose.ui.geometry.Offset
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
+import com.dadadadev.prototype_me.erd.board.config.ErdEdgeConfig
+import com.dadadadev.prototype_me.erd.board.layout.ErdNodeDimens
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenX
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenY
-
-const val CARD_HEADER_DP = 44f
-const val CARD_FIELD_ROW_DP = 28f
-const val CARD_DIVIDER_DP = 1f
-
-internal const val EDGE_SIDE_FLIP_HYSTERESIS_DP = 24f
 
 internal data class PortKey(
     val nodeId: String,
@@ -35,16 +31,27 @@ internal data class DragSourceAnchor(
     val isRight: Boolean,
 )
 
+/**
+ * Scaled card dimension set, pre-calculated once per frame to avoid repeated multiplications.
+ */
+private class ScaledCardDimens(density: Float, scale: Float) {
+    val headerPx = ErdNodeDimens.CARD_HEADER_DP * density * scale
+    val dividerPx = ErdNodeDimens.CARD_DIVIDER_DP * density * scale
+    val rowPx = ErdNodeDimens.CARD_FIELD_ROW_DP * density * scale
+
+    /** Y-center of a field row at [fieldIndex] relative to the node top. */
+    fun fieldCenterYOffset(fieldIndex: Int): Float =
+        headerPx + dividerPx + rowPx * fieldIndex + rowPx / 2f
+}
+
 internal fun computeAllPortPositions(
-    nodes: Map<String, EntityNode>,
+    nodes: Map<String, ErdEntityNode>,
     scale: Float,
     panOffset: Offset,
     density: Float,
 ): Map<PortKey, Offset> {
     val result = mutableMapOf<PortKey, Offset>()
-    val headerHeight = CARD_HEADER_DP * density * scale
-    val dividerHeight = CARD_DIVIDER_DP * density * scale
-    val rowHeight = CARD_FIELD_ROW_DP * density * scale
+    val dimens = ScaledCardDimens(density, scale)
 
     nodes.values.forEach { node ->
         val nodeLeft = boardToScreenX(node.position.x, scale, panOffset.x, density)
@@ -52,7 +59,7 @@ internal fun computeAllPortPositions(
         val nodeWidth = node.size.width * density * scale
 
         node.fields.forEachIndexed { index, field ->
-            val centerY = nodeTop + headerHeight + dividerHeight + rowHeight * index + rowHeight / 2f
+            val centerY = nodeTop + dimens.fieldCenterYOffset(index)
             result[PortKey(node.id, field.id, side = true)] = Offset(nodeLeft + nodeWidth, centerY)
             result[PortKey(node.id, field.id, side = false)] = Offset(nodeLeft, centerY)
         }
@@ -62,8 +69,8 @@ internal fun computeAllPortPositions(
 }
 
 internal fun computeEdgeAnchors(
-    edge: RelationEdge,
-    nodes: Map<String, EntityNode>,
+    edge: ErdRelationEdge,
+    nodes: Map<String, ErdEntityNode>,
     scale: Float,
     panOffset: Offset,
     density: Float,
@@ -71,17 +78,15 @@ internal fun computeEdgeAnchors(
 ): EdgeAnchors? {
     val sourceNode = nodes[edge.sourceNodeId] ?: return null
     val targetNode = nodes[edge.targetNodeId] ?: return null
-    val headerHeight = CARD_HEADER_DP * density * scale
-    val dividerHeight = CARD_DIVIDER_DP * density * scale
-    val rowHeight = CARD_FIELD_ROW_DP * density * scale
+    val dimens = ScaledCardDimens(density, scale)
 
-    fun anchorY(node: EntityNode, fieldId: String?): Float {
+    fun anchorY(node: ErdEntityNode, fieldId: String?): Float {
         val top = boardToScreenY(node.position.y, scale, panOffset.y, density)
         return if (fieldId == null) {
-            top + headerHeight / 2f
+            top + dimens.headerPx / 2f
         } else {
             val fieldIndex = node.fields.indexOfFirst { it.id == fieldId }.coerceAtLeast(0)
-            top + headerHeight + dividerHeight + rowHeight * fieldIndex + rowHeight / 2f
+            top + dimens.fieldCenterYOffset(fieldIndex)
         }
     }
 
@@ -103,8 +108,8 @@ internal fun computeEdgeAnchors(
 }
 
 internal fun buildStableEdgeSideOrientations(
-    edges: Collection<RelationEdge>,
-    nodes: Map<String, EntityNode>,
+    edges: Collection<ErdRelationEdge>,
+    nodes: Map<String, ErdEntityNode>,
     previousOrientations: Map<String, EdgeSideOrientation>,
 ): Map<String, EdgeSideOrientation> = buildMap {
     edges.forEach { edge ->
@@ -122,23 +127,23 @@ internal fun buildStableEdgeSideOrientations(
 }
 
 internal fun resolveStableEdgeSideOrientation(
-    sourceNode: EntityNode,
-    targetNode: EntityNode,
+    sourceNode: ErdEntityNode,
+    targetNode: ErdEntityNode,
     previousOrientation: EdgeSideOrientation? = null,
 ): EdgeSideOrientation {
     val deltaX = (targetNode.position.x + targetNode.size.width / 2f) -
         (sourceNode.position.x + sourceNode.size.width / 2f)
 
     return when {
-        deltaX > EDGE_SIDE_FLIP_HYSTERESIS_DP -> EdgeSideOrientation(srcIsRight = true, tgtIsRight = false)
-        deltaX < -EDGE_SIDE_FLIP_HYSTERESIS_DP -> EdgeSideOrientation(srcIsRight = false, tgtIsRight = true)
+        deltaX > ErdEdgeConfig.SIDE_FLIP_HYSTERESIS_DP -> EdgeSideOrientation(srcIsRight = true, tgtIsRight = false)
+        deltaX < -ErdEdgeConfig.SIDE_FLIP_HYSTERESIS_DP -> EdgeSideOrientation(srcIsRight = false, tgtIsRight = true)
         previousOrientation != null -> previousOrientation
         deltaX >= 0f -> EdgeSideOrientation(srcIsRight = true, tgtIsRight = false)
         else -> EdgeSideOrientation(srcIsRight = false, tgtIsRight = true)
     }
 }
 
-internal fun buildEdgeLabel(edge: RelationEdge, nodes: Map<String, EntityNode>): String {
+internal fun buildEdgeLabel(edge: ErdRelationEdge, nodes: Map<String, ErdEntityNode>): String {
     val sourceNode = nodes[edge.sourceNodeId]
     val targetNode = nodes[edge.targetNodeId]
     val sourceLabel = if (edge.sourceFieldId != null) {

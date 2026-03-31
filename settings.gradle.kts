@@ -39,6 +39,8 @@ project(":app").projectDir = file("composeApp")
 // Core modules
 include(":core:mvi")
 include(":core:ui")
+include(":core:network")
+include(":core:common")
 
 // Board Core modules
 include(":domains:board-core:api:domain")
@@ -49,9 +51,13 @@ include(":domains:board-core:impl:data")
 include(":domains:erd-design:api:domain")
 include(":domains:erd-design:api:data")
 include(":domains:erd-design:impl:data")
+include(":domains:erd-design:impl:domain")
 
-// Board System Design modules
+// Auth modules
+include(":domains:auth:api")
+include(":domains:auth:impl")
 
 // Feature modules
 include(":feature:erd-board")
 include(":feature:board-core")
+include(":feature:home")

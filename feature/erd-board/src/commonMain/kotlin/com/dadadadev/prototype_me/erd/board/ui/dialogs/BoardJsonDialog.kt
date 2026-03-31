@@ -41,6 +41,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 
 private const val EXPORT_FILENAME = "board.json"
 
@@ -56,14 +59,14 @@ internal fun BoardJsonDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        shape = RoundedCornerShape(12.dp),
+        containerColor = ErdBoardColors.surfaceDialog,
+        shape = RoundedCornerShape(ErdBoardDimens.DIALOG_CORNER_RADIUS_DP.dp),
         title = {
             Text(
-                "Board JSON",
+                ErdBoardStrings.JSON_DIALOG_TITLE,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = Color(0xFF111111),
+                fontSize = ErdBoardDimens.DIALOG_TITLE_FONT_SP.sp,
+                color = ErdBoardColors.textPrimary,
             )
         },
         text = {
@@ -71,21 +74,21 @@ internal fun BoardJsonDialog(
                 SecondaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
-                    contentColor = Color(0xFF111111),
+                    contentColor = ErdBoardColors.textPrimary,
                 ) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("View / Export", fontSize = 12.sp) },
+                        text = { Text(ErdBoardStrings.JSON_TAB_VIEW_EXPORT, fontSize = ErdBoardDimens.DIALOG_BODY_FONT_SP.sp) },
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1; importError = null },
-                        text = { Text("Import", fontSize = 12.sp) },
+                        text = { Text(ErdBoardStrings.JSON_TAB_IMPORT, fontSize = ErdBoardDimens.DIALOG_BODY_FONT_SP.sp) },
                     )
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(ErdBoardDimens.DIALOG_SECTION_SPACING_XL_DP.dp))
 
                 when (selectedTab) {
                     0 -> ViewExportTab(json = currentJson)
@@ -100,7 +103,7 @@ internal fun BoardJsonDialog(
         confirmButton = {
             when (selectedTab) {
                 0 -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ErdBoardDimens.DIALOG_BUTTONS_SPACING_DP.dp)) {
                         SaveJsonButton(filename = EXPORT_FILENAME, content = currentJson)
                         CopyJsonButton(content = currentJson)
                     }
@@ -109,18 +112,27 @@ internal fun BoardJsonDialog(
                     TextButton(onClick = {
                         val trimmed = importText.trim()
                         when {
-                            trimmed.isBlank() -> importError = "Paste JSON to import"
+                            trimmed.isBlank() -> importError = ErdBoardStrings.JSON_IMPORT_ERROR_EMPTY
                             else -> onImport(trimmed)
                         }
                     }) {
-                        Text("Import", color = Color(0xFF111111), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            ErdBoardStrings.JSON_IMPORT_BUTTON,
+                            color = ErdBoardColors.textPrimary,
+                            fontSize = ErdBoardDimens.DIALOG_BUTTON_FONT_SP.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = Color(0xFF888888), fontSize = 13.sp)
+                Text(
+                    ErdBoardStrings.JSON_CLOSE,
+                    color = ErdBoardColors.textDisabled,
+                    fontSize = ErdBoardDimens.DIALOG_BUTTON_FONT_SP.sp,
+                )
             }
         },
     )
@@ -136,20 +148,30 @@ private fun ViewExportTab(json: String) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 200.dp, max = 360.dp)
-                .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
-                .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+                .heightIn(
+                    min = ErdBoardDimens.DIALOG_JSON_EXPORT_MIN_HEIGHT_DP.dp,
+                    max = ErdBoardDimens.DIALOG_JSON_EXPORT_MAX_HEIGHT_DP.dp,
+                )
+                .border(
+                    ErdBoardDimens.DIALOG_CODE_BORDER_WIDTH_DP.dp,
+                    ErdBoardColors.divider,
+                    RoundedCornerShape(ErdBoardDimens.DIALOG_CODE_CORNER_RADIUS_DP.dp),
+                )
+                .background(
+                    ErdBoardColors.surfaceCodeBlock,
+                    RoundedCornerShape(ErdBoardDimens.DIALOG_CODE_CORNER_RADIUS_DP.dp),
+                )
                 .verticalScroll(scrollV)
                 .horizontalScroll(scrollH)
-                .padding(12.dp),
+                .padding(ErdBoardDimens.DIALOG_CODE_PADDING_DP.dp),
         ) {
             Text(
                 text = json,
                 style = TextStyle(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    color = Color(0xFF333333),
-                    lineHeight = 16.sp,
+                    fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+                    color = ErdBoardColors.textSecondary,
+                    lineHeight = ErdBoardDimens.DIALOG_CODE_LINE_HEIGHT_SP.sp,
                 ),
             )
         }
@@ -164,39 +186,51 @@ private fun ImportTab(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            "Paste board JSON below.",
-            fontSize = 12.sp,
-            color = Color(0xFF888888),
-            modifier = Modifier.padding(bottom = 8.dp),
+            ErdBoardStrings.JSON_IMPORT_HINT,
+            fontSize = ErdBoardDimens.DIALOG_BODY_FONT_SP.sp,
+            color = ErdBoardColors.textDisabled,
+            modifier = Modifier.padding(bottom = ErdBoardDimens.DIALOG_SECTION_SPACING_LG_DP.dp),
         )
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 160.dp, max = 300.dp),
-            placeholder = { Text("{ \"version\": 1, \"nodes\": [...], ... }", color = Color(0xFFCCCCCC), fontSize = 11.sp) },
-            textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                .heightIn(
+                    min = ErdBoardDimens.DIALOG_JSON_IMPORT_MIN_HEIGHT_DP.dp,
+                    max = ErdBoardDimens.DIALOG_JSON_IMPORT_MAX_HEIGHT_DP.dp,
+                ),
+            placeholder = {
+                Text(
+                    ErdBoardStrings.JSON_IMPORT_PLACEHOLDER,
+                    color = ErdBoardColors.textGhost,
+                    fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+                )
+            },
+            textStyle = TextStyle(
+                fontFamily = FontFamily.Monospace,
+                fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+            ),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (error != null) Color(0xFFCC3333) else Color(0xFF111111),
-                unfocusedBorderColor = if (error != null) Color(0xFFCC3333) else Color(0xFFDDDDDD),
-                cursorColor = Color(0xFF111111),
+                focusedBorderColor = if (error != null) ErdBoardColors.accentRed else ErdBoardColors.borderStrong,
+                unfocusedBorderColor = if (error != null) ErdBoardColors.accentRed else ErdBoardColors.borderDefault,
+                cursorColor = ErdBoardColors.borderStrong,
             ),
             isError = error != null,
         )
         if (error != null) {
             Text(
                 error,
-                fontSize = 11.sp,
-                color = Color(0xFFCC3333),
-                modifier = Modifier.padding(top = 4.dp),
+                fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+                color = ErdBoardColors.accentRed,
+                modifier = Modifier.padding(top = ErdBoardDimens.DIALOG_LABEL_BOTTOM_PADDING_DP.dp),
             )
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(ErdBoardDimens.DIALOG_LABEL_BOTTOM_PADDING_DP.dp))
         Text(
-            "Warning: importing replaces the current board.",
-            fontSize = 11.sp,
-            color = Color(0xFFAAAAAA),
+            ErdBoardStrings.JSON_IMPORT_WARNING,
+            fontSize = ErdBoardDimens.DIALOG_CAPTION_FONT_SP.sp,
+            color = ErdBoardColors.textPlaceholder,
         )
     }
 }

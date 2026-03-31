@@ -1,11 +1,21 @@
 package com.dadadadev.prototype_me.erd.board.ui.canvas
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.util.lerp
+import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardPoint
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.erd.board.config.ErdBoardConfig
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardState
+import com.dadadadev.prototype_me.erd.board.ui.mappers.toOffset
+import kotlin.math.abs
 
 internal data class ErdBoardRenderData(
     val isConnecting: Boolean,
+    val renderedNodes: Map<String, ErdEntityNode>,
     val edgeSideOrientations: Map<String, EdgeSideOrientation>,
     val portPositions: Map<PortKey, androidx.compose.ui.geometry.Offset>,
     val edgeHitPolylines: Map<String, List<androidx.compose.ui.geometry.Offset>>,
@@ -21,11 +31,12 @@ internal fun rememberErdBoardRenderData(
 ): ErdBoardRenderData {
     val isConnecting = state.connectingFromNodeId != null || state.draggingEdgeFromNodeId != null
     val stableEdgeSideCache = remember { mutableMapOf<String, EdgeSideOrientation>() }
+    val renderedNodes = rememberRenderedNodes(state)
 
-    val edgeSideOrientations = remember(state.edges, state.nodes) {
+    val edgeSideOrientations = remember(state.edges, renderedNodes) {
         buildStableEdgeSideOrientations(
             edges = state.edges.values,
-            nodes = state.nodes,
+            nodes = renderedNodes,
             previousOrientations = stableEdgeSideCache,
         ).also { resolvedOrientations ->
             stableEdgeSideCache.clear()
@@ -33,13 +44,13 @@ internal fun rememberErdBoardRenderData(
         }
     }
 
-    val portPositions = remember(state.nodes, state.scale, state.panOffset, density) {
-        computeAllPortPositions(state.nodes, state.scale, state.panOffset, density)
+    val portPositions = remember(renderedNodes, state.scale, state.panOffset, density) {
+        computeAllPortPositions(renderedNodes, state.scale, state.panOffset.toOffset(), density)
     }
 
     val edgeHitPolylines = remember(
         state.edges,
-        state.nodes,
+        renderedNodes,
         state.scale,
         state.panOffset,
         density,
@@ -47,9 +58,9 @@ internal fun rememberErdBoardRenderData(
     ) {
         buildEdgeHitPolylines(
             edges = state.edges.values.toList(),
-            nodes = state.nodes,
+            nodes = renderedNodes,
             scale = state.scale,
-            panOffset = state.panOffset,
+            panOffset = state.panOffset.toOffset(),
             density = density,
             edgeSideOrientations = edgeSideOrientations,
         )
@@ -78,6 +89,7 @@ internal fun rememberErdBoardRenderData(
 
     return ErdBoardRenderData(
         isConnecting = isConnecting,
+        renderedNodes = renderedNodes,
         edgeSideOrientations = edgeSideOrientations,
         portPositions = portPositions,
         edgeHitPolylines = edgeHitPolylines,
@@ -87,3 +99,51 @@ internal fun rememberErdBoardRenderData(
     )
 }
 
+@Composable
+private fun rememberRenderedNodes(state: ErdBoardState): Map<String, ErdEntityNode> {
+    val renderedPositions = remember { mutableStateMapOf<String, BoardPoint>() }
+
+    LaunchedEffect(state.nodes.keys) {
+        val activeNodeIds = state.nodes.keys
+        renderedPositions.keys.toList()
+            .filterNot(activeNodeIds::contains)
+            .forEach(renderedPositions::remove)
+
+        state.nodes.forEach { (nodeId, node) ->
+            if (nodeId !in renderedPositions) {
+                renderedPositions[nodeId] = node.position
+            }
+        }
+    }
+
+    LaunchedEffect(state.nodes, state.draggingNodeIds) {
+        while (true) {
+            var hasPendingAnimation = false
+
+            state.nodes.forEach { (nodeId, node) ->
+                val targetPosition = node.position
+                val currentPosition = renderedPositions[nodeId] ?: targetPosition
+                val nextPosition = when {
+                    nodeId in state.draggingNodeIds -> targetPosition
+                    abs(targetPosition.x - currentPosition.x) <= ErdBoardConfig.REMOTE_DRAG_LERP_EPSILON &&
+                        abs(targetPosition.y - currentPosition.y) <= ErdBoardConfig.REMOTE_DRAG_LERP_EPSILON -> targetPosition
+                    else -> {
+                        hasPendingAnimation = true
+                        BoardPoint(
+                            x = lerp(currentPosition.x, targetPosition.x, ErdBoardConfig.REMOTE_DRAG_LERP_FACTOR),
+                            y = lerp(currentPosition.y, targetPosition.y, ErdBoardConfig.REMOTE_DRAG_LERP_FACTOR),
+                        )
+                    }
+                }
+                renderedPositions[nodeId] = nextPosition
+            }
+
+            if (!hasPendingAnimation) break
+            withFrameNanos { }
+        }
+    }
+
+    return state.nodes.mapValues { (nodeId, node) ->
+        node.copy(position = renderedPositions[nodeId] ?: node.position)
+    }
+}

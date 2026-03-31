@@ -5,9 +5,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 
 @JsName("navigator")
 private external val browserNavigator: dynamic
@@ -18,9 +20,9 @@ internal actual fun CopyJsonButton(content: String) {
 
     TextButton(onClick = { browserNavigator.clipboard.writeText(latestContent) }) {
         Text(
-            "Copy",
-            color = Color(0xFF111111),
-            fontSize = 13.sp,
+            ErdBoardStrings.JSON_COPY_BUTTON,
+            color = ErdBoardColors.textPrimary,
+            fontSize = ErdBoardDimens.PLATFORM_BUTTON_FONT_SP.sp,
             fontWeight = FontWeight.Medium,
         )
     }

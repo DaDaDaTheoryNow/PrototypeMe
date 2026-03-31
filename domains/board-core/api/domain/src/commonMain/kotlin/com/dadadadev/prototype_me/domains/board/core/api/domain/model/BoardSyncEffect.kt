@@ -6,5 +6,9 @@ sealed interface BoardSyncEffect {
         val lockedBy: String,
     ) : BoardSyncEffect
 
+    data class ConnectionFailed(
+        val message: String,
+    ) : BoardSyncEffect
+
     data object ConnectionLost : BoardSyncEffect
 }

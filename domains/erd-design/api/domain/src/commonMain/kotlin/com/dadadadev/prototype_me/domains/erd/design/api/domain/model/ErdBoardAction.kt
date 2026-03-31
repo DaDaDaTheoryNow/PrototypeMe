@@ -19,10 +19,10 @@ sealed class ErdBoardAction : BoardMutation {
     }
 
     data class AddNode(
-        val node: EntityNode,
+        val node: ErdEntityNode,
         override val actionId: String,
-    ) : ErdBoardAction(), UpsertEntityMutation<EntityNode> {
-        override val entity: EntityNode = node
+    ) : ErdBoardAction(), UpsertEntityMutation<ErdEntityNode> {
+        override val entity: ErdEntityNode = node
     }
 
     data class DeleteNode(
@@ -33,13 +33,13 @@ sealed class ErdBoardAction : BoardMutation {
     }
 
     data class AddEdge(
-        override val edge: RelationEdge,
+        override val edge: ErdRelationEdge,
         override val actionId: String,
-    ) : ErdBoardAction(), UpsertEdgeMutation<RelationEdge>
+    ) : ErdBoardAction(), UpsertEdgeMutation<ErdRelationEdge>
 
     data class AddField(
         val nodeId: String,
-        val field: NodeField,
+        val field: ErdNodeField,
         override val actionId: String,
     ) : ErdBoardAction()
 

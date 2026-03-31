@@ -1,21 +1,20 @@
 package com.dadadadev.prototype_me.erd.board.presentation.contract
 
-import androidx.compose.ui.geometry.Offset
 import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSnapshot
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.FieldType
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 
 sealed class ErdBoardIntent {
     // Canvas gestures
-    data class OnPanZoom(val centroid: Offset, val pan: Offset, val zoom: Float) : ErdBoardIntent()
-    data class OnPan(val delta: Offset) : ErdBoardIntent()
-    data class OnSetViewTransform(val scale: Float, val panOffset: Offset) : ErdBoardIntent()
+    data class OnPanZoom(val centroid: ErdBoardVector, val pan: ErdBoardVector, val zoom: Float) : ErdBoardIntent()
+    data class OnPan(val delta: ErdBoardVector) : ErdBoardIntent()
+    data class OnSetViewTransform(val scale: Float, val panOffset: ErdBoardVector) : ErdBoardIntent()
 
     // Node drag (move in board-space units)
     data class OnDragStart(val nodeId: String) : ErdBoardIntent()
-    data class OnDragNode(val nodeId: String, val delta: Offset) : ErdBoardIntent()
+    data class OnDragNode(val nodeId: String, val delta: ErdBoardVector) : ErdBoardIntent()
     data class OnDragEnd(val nodeId: String) : ErdBoardIntent()
 
     // Add / delete node
@@ -30,7 +29,7 @@ sealed class ErdBoardIntent {
     // Drag-to-connect (drag from port dot to target)
     data class OnEdgeDragStart(val nodeId: String, val fieldId: String?) : ErdBoardIntent()
     data class OnEdgeDragMove(
-        val screenPos: Offset,
+        val screenPos: ErdBoardVector,
         val snappedTargetNodeId: String? = null,
         val snappedTargetFieldId: String? = null,
         val snappedTargetIsRight: Boolean? = null,
@@ -66,6 +65,6 @@ sealed class ErdBoardIntent {
 
     // JSON import: replaces the entire board with the provided nodes and edges.
     data class OnImportBoard(
-        val snapshot: BoardSnapshot<EntityNode, RelationEdge>,
+        val snapshot: BoardSnapshot<ErdEntityNode, ErdRelationEdge>,
     ) : ErdBoardIntent()
 }

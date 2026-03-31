@@ -21,16 +21,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.erd.board.ui.dimens.ErdBoardDimens
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardColors
+import com.dadadadev.prototype_me.erd.board.ui.theme.ErdBoardStrings
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenX
 import com.dadadadev.prototype_me.feature.board.core.ui.viewport.boardToScreenY
 import kotlin.math.roundToInt
 
-private val MenuShape = RoundedCornerShape(12.dp)
+private val MenuShape = RoundedCornerShape(ErdBoardDimens.MENU_CORNER_RADIUS_DP.dp)
 
 @Composable
 internal fun NodeActionMenu(
-    node: EntityNode,
+    node: ErdEntityNode,
     scale: Float,
     panOffset: Offset,
     density: Float,
@@ -44,20 +47,20 @@ internal fun NodeActionMenu(
     CompactMenu(
         modifier = Modifier.offset {
             IntOffset(
-                (cardRightPx + 6.dp.toPx()).roundToInt(),
+                (cardRightPx + ErdBoardDimens.MENU_OFFSET_FROM_NODE_DP.dp.toPx()).roundToInt(),
                 cardTopPx.roundToInt(),
             )
         },
     ) {
         MenuAction(
-            label = "Edit Fields",
-            color = Color(0xFF333333),
+            label = ErdBoardStrings.MENU_EDIT_FIELDS,
+            color = ErdBoardColors.textSecondary,
             onClick = onEditFields,
         )
         MenuDivider()
         MenuAction(
-            label = "Delete",
-            color = Color(0xFFCC3333),
+            label = ErdBoardStrings.MENU_DELETE,
+            color = ErdBoardColors.accentRed,
             fontWeight = FontWeight.Medium,
             onClick = onDelete,
         )
@@ -73,29 +76,29 @@ internal fun MultiSelectMenu(
     onCopy: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    val menuX = anchorPos.x.coerceIn(4f, screenW - 140f)
-    val menuY = anchorPos.y.coerceIn(4f, screenH - 80f)
+    val menuX = anchorPos.x.coerceIn(ErdBoardDimens.MENU_SCREEN_MARGIN_PX, screenW - ErdBoardDimens.MENU_ESTIMATED_WIDTH_PX)
+    val menuY = anchorPos.y.coerceIn(ErdBoardDimens.MENU_SCREEN_MARGIN_PX, screenH - ErdBoardDimens.MENU_ESTIMATED_HEIGHT_PX)
 
     CompactMenu(
         modifier = Modifier.offset { IntOffset(menuX.roundToInt(), menuY.roundToInt()) },
     ) {
         Text(
-            text = "$selectedCount selected",
-            fontSize = 11.sp,
-            color = Color(0xFF777777),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            text = ErdBoardStrings.multiSelectCount(selectedCount),
+            fontSize = ErdBoardDimens.MENU_COUNT_FONT_SP.sp,
+            color = ErdBoardColors.textDisabled,
+            modifier = Modifier.padding(horizontal = ErdBoardDimens.MENU_ACTION_PADDING_H_DP.dp, vertical = ErdBoardDimens.MENU_ACTION_PADDING_V_DP.dp),
         )
         MenuDivider()
         MenuAction(
-            label = "Copy",
-            color = Color(0xFF2255CC),
+            label = ErdBoardStrings.MENU_COPY,
+            color = ErdBoardColors.accentBlue,
             fontWeight = FontWeight.Medium,
             onClick = onCopy,
         )
         MenuDivider()
         MenuAction(
-            label = "Delete",
-            color = Color(0xFFCC3333),
+            label = ErdBoardStrings.MENU_DELETE,
+            color = ErdBoardColors.accentRed,
             fontWeight = FontWeight.Medium,
             onClick = onDeleteAll,
         )
@@ -112,14 +115,14 @@ private fun CompactMenu(
     Surface(
         modifier = modifier
             .padding(0.dp),
-        color = Color.White,
+        color = ErdBoardColors.surfaceMenu,
         shape = MenuShape,
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+        border = BorderStroke(ErdBoardDimens.MENU_BORDER_WIDTH_DP.dp, ErdBoardColors.borderLight),
         tonalElevation = 0.dp,
-        shadowElevation = 4.dp,
+        shadowElevation = ErdBoardDimens.MENU_SHADOW_ELEVATION_DP.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = ErdBoardDimens.MENU_INNER_PADDING_H_DP.dp, vertical = ErdBoardDimens.MENU_INNER_PADDING_V_DP.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             content()
@@ -136,14 +139,14 @@ private fun MenuAction(
 ) {
     Box(
         modifier = Modifier
-            .defaultMinSize(minHeight = 32.dp)
+            .defaultMinSize(minHeight = ErdBoardDimens.MENU_ACTION_MIN_HEIGHT_DP.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = ErdBoardDimens.MENU_ACTION_PADDING_H_DP.dp, vertical = ErdBoardDimens.MENU_ACTION_PADDING_V_DP.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = ErdBoardDimens.MENU_LABEL_FONT_SP.sp,
             color = color,
             fontWeight = fontWeight,
         )
@@ -154,8 +157,8 @@ private fun MenuAction(
 private fun MenuDivider() {
     VerticalDivider(
         modifier = Modifier
-            .height(20.dp)
-            .padding(horizontal = 2.dp),
-        color = Color(0xFFE0E0E0),
+            .height(ErdBoardDimens.MENU_DIVIDER_HEIGHT_DP.dp)
+            .padding(horizontal = ErdBoardDimens.MENU_DIVIDER_PADDING_H_DP.dp),
+        color = ErdBoardColors.separator,
     )
 }

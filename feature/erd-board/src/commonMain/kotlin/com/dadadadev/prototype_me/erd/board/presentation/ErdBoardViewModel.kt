@@ -2,11 +2,9 @@ package com.dadadadev.prototype_me.erd.board.presentation
 
 import com.dadadadev.prototype_me.core.mvi.BaseViewModel
 import com.dadadadev.prototype_me.domains.board.core.api.domain.model.BoardSnapshot
-import com.dadadadev.prototype_me.domains.erd.design.api.data.codec.ErdBoardJsonCodec
-import com.dadadadev.prototype_me.domains.erd.design.api.data.repository.ErdBoardRepository
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.Position
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardIntent
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardSideEffect
 import com.dadadadev.prototype_me.erd.board.presentation.contract.ErdBoardState
@@ -21,8 +19,8 @@ import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.observeBoardS
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.observeBoardState
 
 class ErdBoardViewModel(
-    internal val repository: ErdBoardRepository,
-    private val boardJsonCodec: ErdBoardJsonCodec,
+    internal val useCases: ErdBoardUseCases,
+    internal val boardSession: ErdBoardSession,
 ) : BaseViewModel<ErdBoardState, ErdBoardSideEffect>(ErdBoardState()) {
 
     internal val dragOrigins = mutableMapOf<String, Position>()
@@ -36,7 +34,7 @@ class ErdBoardViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        intent { repository.disconnect() }
+        intent { useCases.disconnectFromBoard() }
     }
 
     fun onIntent(boardIntent: ErdBoardIntent) {
@@ -81,15 +79,12 @@ class ErdBoardViewModel(
     }
 
     fun exportBoardJson(
-        nodes: Map<String, EntityNode>,
-        edges: Map<String, RelationEdge>,
-    ): String = boardJsonCodec.encode(
-        BoardSnapshot(
-            entities = nodes,
-            edges = edges,
-        ),
+        nodes: Map<String, ErdEntityNode>,
+        edges: Map<String, ErdRelationEdge>,
+    ): String = useCases.exportBoardJson(
+        BoardSnapshot(entities = nodes, edges = edges),
     )
 
-    fun importBoardJson(rawJson: String): Result<BoardSnapshot<EntityNode, RelationEdge>> =
-        boardJsonCodec.decode(rawJson)
+    fun importBoardJson(rawJson: String): Result<BoardSnapshot<ErdEntityNode, ErdRelationEdge>> =
+        useCases.importBoardJson(rawJson)
 }

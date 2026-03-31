@@ -1,27 +1,28 @@
 package com.dadadadev.prototype_me.erd.board.presentation.viewmodel
 
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.EntityNode
-import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.RelationEdge
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdEntityNode
+import com.dadadadev.prototype_me.domains.erd.design.api.domain.model.ErdRelationEdge
 import com.dadadadev.prototype_me.erd.board.presentation.viewmodel.undo.ErdUndoAction
-
-internal const val DEFAULT_BOARD_ID = "board_1"
-internal const val DEFAULT_CURRENT_USER_ID = "user_1"
+import com.dadadadev.prototype_me.erd.board.config.ErdBoardConfig
+import kotlin.time.TimeMark
 
 internal data class ErdBoardRuntimeState(
     val locallyMovedNodeIds: Set<String> = emptySet(),
     val undoStack: List<ErdUndoAction> = emptyList(),
     val clipboard: ErdClipboard? = null,
+    val lastDragPreviewNodeId: String? = null,
+    val lastDragPreviewSentAt: TimeMark? = null,
 ) {
     val canUndo: Boolean get() = undoStack.isNotEmpty()
 }
 
 internal data class ErdClipboard(
-    val nodes: List<EntityNode>,
-    val internalEdges: List<RelationEdge>,
+    val nodes: List<ErdEntityNode>,
+    val internalEdges: List<ErdRelationEdge>,
 )
 
 internal fun ErdBoardRuntimeState.pushUndo(action: ErdUndoAction): ErdBoardRuntimeState =
-    copy(undoStack = (undoStack + action).takeLast(MAX_UNDO))
+    copy(undoStack = (undoStack + action).takeLast(ErdBoardConfig.MAX_UNDO_STEPS))
 
 internal fun ErdBoardRuntimeState.popUndo(): Pair<ErdUndoAction?, ErdBoardRuntimeState> {
     val action = undoStack.lastOrNull()
@@ -43,3 +44,9 @@ internal fun ErdBoardRuntimeState.markLocallyMoved(nodeIds: Collection<String>):
 
 internal fun ErdBoardRuntimeState.clearLocallyMoved(nodeIds: Collection<String>): ErdBoardRuntimeState =
     copy(locallyMovedNodeIds = locallyMovedNodeIds - nodeIds.toSet())
+
+internal fun ErdBoardRuntimeState.markDragPreviewSent(nodeId: String, sentAt: TimeMark): ErdBoardRuntimeState =
+    copy(lastDragPreviewNodeId = nodeId, lastDragPreviewSentAt = sentAt)
+
+internal fun ErdBoardRuntimeState.clearDragPreviewThrottle(): ErdBoardRuntimeState =
+    copy(lastDragPreviewNodeId = null, lastDragPreviewSentAt = null)
