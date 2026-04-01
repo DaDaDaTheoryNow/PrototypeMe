@@ -6,7 +6,7 @@ import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 
 internal object ErdBoardRemoteConfig {
-    const val BASE_URL: String = "http://127.0.0.1:8081/"
+    const val BASE_URL: String = "https://prototypeme-backend-v1-0-0.onrender.com/"
 
     private val baseUrl = Url(BASE_URL)
 
